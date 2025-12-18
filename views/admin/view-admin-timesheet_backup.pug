@@ -1,0 +1,200 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Timesheet
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/timesheet/create') Add
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body(style="padding-top: 0px !important;")
+                .row
+                  .col-md-4
+                    .form-group
+                      label(for='from') From
+                      //- input#fromTo(type='text' name='from')
+                      #fromTo(style='background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%')
+                        i.fa.fa-calendar
+                        span(style="padding: 0 7px;")
+                        i.fa.fa-caret-down
+                  .col-md-3
+                    .form-group
+                      label(for='exampleFormControlSelect') Select Project
+                      select#dropdown1.form-control.select2(name='theme')
+                        option(value='') Select Project
+                        each project in projects
+                          option(value=`${project.name}`) #{project.name}
+                  .col-md-3
+                    .form-group
+                      label(for='exampleFormControlSelect') Select Employee
+                      select#dropdown2.form-control.select2(name='theme')
+                        option(value='') Select Employee
+                        each user in users
+                          option(value=`${user.name}`) #{user.name}
+                  .col-md-2
+                    button.btn.btn-primary#clear_filter(type="button" style='margin-top:26px;')
+                      | Clear Filter
+                  .col-md-2
+                hr
+                //- pre= h.dump(projects)
+                .table-responsive
+                  .col-sm-12
+                    table#all-timesheet.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Project Name
+                          th Employee Name
+                          th Worked Date
+                          th Worked Hour
+                          th Note
+                      tbody
+                        each timesheet in timesheets
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{ timesheet.project_id && timesheet.project_id.name ? timesheet.project_id.name : "Not Provided"}
+                              td #{timesheet.employee_id && timesheet.employee_id.name ? timesheet.employee_id.name : "Not Provided"}
+                              td #{timesheet.worked_date_obj.ll}
+                              td #{timesheet.worked_hour} hour
+                              td #{timesheet.notes ? timesheet.notes : "Not Provided"}
+                .row
+  block script
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+
+  script.
+    $(document).ready(function () {
+      var tbl = $('#all-timesheet').DataTable({
+        ordering: false
+      });
+
+      $('#dropdown1').on('change', function () {
+        tbl
+          .columns(0)
+          .search(this.value)
+          .draw();
+      });
+
+      $('#dropdown2').on('change', function () {
+        tbl
+          .columns(1)
+          .search(this.value)
+          .draw();
+      });
+
+      $('#clear_filter').click(function () {
+        tbl
+          .search('')
+          .columns().search('')
+          .draw();
+
+        $('#dropdown1').val('').change();
+        $('#dropdown2').val('').change();
+        $('#fromTo span').html("");
+        //- tbl.ajax.reload();
+      })
+
+      $('#fromTo').on('cancel.daterangepicker', function(ev, picker) {
+        //do something, like clearing an input
+        $('#fromTo span').html("");
+        tbl.draw();
+      });
+
+      $('#dropdown1').select2({
+        type: 'bootstrap'
+      });
+
+      $('#dropdown2').select2({
+        type: 'bootstrap'
+      });
+
+      function swall(text) {
+        var SweetAlert2Demo = function () {
+          //== Demos
+          var initDemos = function () {
+            swal(text, {
+              buttons: false,
+              timer: 2000,
+              backdrop:true,
+              closeOnClickOutside: false,
+              closeOnEsc: false
+            })
+          };
+          return {
+              //== Init
+              init: function () {
+                initDemos();
+              },
+            };
+          }();
+        jQuery(document).ready(function () {
+          SweetAlert2Demo.init();
+        });
+    }
+
+      var start = moment();
+      var end = moment();
+
+      function cb(start, end) {
+        $('#fromTo span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        let startDate = {
+          year: parseInt(start.format('YYYY')),
+          month: parseInt(start.format('MM')),
+          date: parseInt(start.format('DD'))
+        };
+        let endDate = {
+          year: parseInt(end.format('YYYY')),
+          month: parseInt(end.format('MM')),
+          date: parseInt(end.format('DD'))
+        };
+
+        swall("Please wait...");
+
+        $.ajax({
+          type: 'POST',
+          url: `/admin/timesheet/filter/by/date`,
+          dataType: "json",
+          data: {
+            start: startDate,
+            end: endDate
+          },
+          success: function(result) {
+            console.log(result);
+            if (result.code == 200) {
+              swal.close();
+              tbl.clear().rows.add(result.data.newArr).draw();
+              return;
+            } else if (result.code == 309) {
+              swal.close();
+              swall("Something went wrong. Try again later!");
+            } else if (result.code == 401) {
+              swall("Something went wrong. Try again later!");
+            } else {
+              swal.close();
+              notifyy("Something went wrong! Try again later.", "danger");
+            }
+          }
+        })
+      }
+
+      $('#fromTo').daterangepicker({
+        startDate: start,
+        endDate: end,
+        autoUpdateInput: false,
+        locale: {
+          cancelLabel: 'Clear'
+        }
+      }, cb);
+
+      //- $('#clear_filter').click(function() {
+      //-   window.location.reload();
+      //-   return;
+      //- })
+    })

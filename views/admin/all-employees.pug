@@ -1,0 +1,307 @@
+extends layout-admin
+
+block content
+  // --- START: Date Range Picker Fixes and Libraries ---
+  
+  style.
+    .daterangepicker {
+      z-index: 99999 !important; 
+    }
+
+  script(type='text/javascript', src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+  link(rel='stylesheet', type='text/css', href='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css')
+  script(type='text/javascript', src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+  
+  // --- END: Date Range Picker Fixes and Libraries ---
+
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View All Employees
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='javascript:void(0);' onclick=`addNewEmployee()`) Add Employee
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                .table-responsive
+                  .col-sm-12
+                    table#all-employee.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Name
+                          th Email
+                          th Mobile
+                          th Type
+                          th Resource Based
+                          th Leaves allowed in this Date Range
+                          th Leaves Allow
+                          th Status
+                          th Action
+                      tbody
+                        each employee in allEmployees
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1(style="text-align: center;") #{employee.name}
+                              td(style="text-align: center;") #{employee.email}
+                              td(style="text-align: center;") #{employee.mobile}
+                              td(style="text-align: center;") #{employee.role == 1 ? "Admin" : "Employee"}
+                              td(style="text-align: center;") #{employee.resource_based == 1 ? "Yes" : "No"}
+                              td(style="text-align: center;") #{employee.formattedDateRange || "N/A"}
+                              td(style="text-align: center;") #{employee.leaveAllow  || "N/A"} 
+                              td(style="text-align: center;") #{employee.status == 'active' ? 'Active' : 'Inactive'}
+                              td(style="text-align: center;")
+                                if session.user.role == 1
+                                  .form-button-action
+                                    button.btn.btn-link.btn-primary(type='button' data-toggle='tooltip' title="View employee's password" onclick=`viewPassword('${employee._id}')`)
+                                      i.fa.fa-eye
+                                    button.btn.btn-link.btn-primary(type='button' data-toggle='tooltip' title="Edit employee" onclick=`editEmployee('${employee._id}', '${employee.name}', '${employee.email}', '${employee.mobile}', '${employee.role}', '${employee.status}', '${employee.resource_based}', '${employee.dateRange}', '${employee.leaveAllow}')`)
+                                      i.fa.fa-edit
+                                    button.btn.btn-link.btn-primary(type='button' data-toggle='tooltip' title="Reset password" onclick=`resetPassword('${employee._id}', '${employee.name}')`)
+                                      i.fa.fa-key
+
+  script.
+    $(document).ready(function() {
+      $('#all-employee').DataTable({
+        ordering: false,
+        pageLength: 100
+      });
+    });
+
+    // --- Add Employee Modal ---
+    function addNewEmployee() {
+      $.fancybox.open(`
+        <form action="/admin/account/create/employee" method="POST" style="max-width:41%;">
+          <div class="card-body">
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Name</label>
+                  <input type="text" class="form-control" name="name" placeholder="Name" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Email</label>
+                  <input type="email" class="form-control" name="email" placeholder="Email" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Password</label>
+                  <input type="password" class="form-control" name="password" placeholder="Password" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Mobile</label>
+                  <input type="number" class="form-control" name="mobile" placeholder="Mobile">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Role</label>
+                  <select class="form-control" name="role">
+                    <option value=1>Admin</option>
+                    <option value=2 selected>Employee</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Resource Based</label>
+                  <select class="form-control" name="resource_based">
+                    <option value=0 selected>No</option>
+                    <option value=1>Yes</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Leaves allowed in this Date Range</label>
+                  <div id="empDateRangeAdd" style="background: #fff; cursor: pointer; padding: 8px 15px; border: 1px solid #ccc; width: 100%; border-radius: 4px;">
+                    <i class="fa fa-calendar"></i>
+                    <span id="dateRangeTextAdd" style="padding:0 7px;">Select range</span>
+                    <i class="fa fa-caret-down"></i>
+                  </div>
+                  <input type="hidden" name="dateRange" id="dateRangeAdd" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Leaves Allow</label>
+                  <input type="number" class="form-control" name="leaveAllow" placeholder="Enter number of leaves" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Status</label>
+                  <select class="form-control" name="status">
+                    <option value="active" selected>Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="text-right mt-3 mb-3">
+              <button class="btn btn-secondary btn-round" type="submit">Add New Employee</button>
+            </div>
+          </div>
+        </form>
+      `,{
+        smallBtn: true,
+        afterShow: function(instance, current) {
+          if($.fn.daterangepicker){
+            $('#empDateRangeAdd').daterangepicker({
+              opens: 'left',
+              locale: { format: 'DD/MM/YYYY' },
+              parentEl: current.content
+            }, function(start, end){
+              $('#dateRangeTextAdd').html(start.format('DD/MM/YYYY') + ' - ' + end.format('DD/MM/YYYY'));
+              $('#dateRangeAdd').val(start.format('DD/MM/YYYY') + '-' + end.format('DD/MM/YYYY'));
+            });
+          }
+        }
+      });
+    }
+
+    // --- Edit Employee Modal ---
+    function editEmployee(emp_id, emp_name, emp_email, emp_mob, emp_role, emp_status, res_based, emp_dateRange, leaveAllow) {
+      $.fancybox.open(`
+        <form action="/admin/account/edit/employee/${emp_id}" method="POST" style="max-width:41%;">
+          <div class="card-body">
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Name</label>
+                  <input type="text" class="form-control" name="name" value="${emp_name}" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Email</label>
+                  <input type="email" class="form-control" name="email" value="${emp_email}" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Mobile</label>
+                  <input type="number" class="form-control" name="mobile" value="${emp_mob}" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Role</label>
+                  <select class="form-control" name="role">
+                    <option value=1 ${emp_role==1?'selected':''}>Admin</option>
+                    <option value=2 ${emp_role==2?'selected':''}>Employee</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Resource Based</label>
+                  <select class="form-control" name="resource_based">
+                    <option value=0 ${res_based==0?'selected':''}>No</option>
+                    <option value=1 ${res_based==1?'selected':''}>Yes</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Leaves allowed in this Date Range</label>
+                  <div id="empDateRangeEdit" style="background: #fff; cursor: pointer; padding: 8px 15px; border: 1px solid #ccc; width: 100%; border-radius: 4px;">
+                    <i class="fa fa-calendar"></i>
+                    <span id="dateRangeTextEdit">${emp_dateRange && emp_dateRange.trim() !== "" ? emp_dateRange : "Select range"}</span>
+                    <i class="fa fa-caret-down"></i>
+                  </div>
+                  <input type="hidden" name="dateRange" id="dateRangeEdit" value="${emp_dateRange || ""}">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Leaves Allow</label>
+                  <input type="number" class="form-control" name="leaveAllow" value="${leaveAllow || ''}" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Status</label>
+                  <select class="form-control" name="status">
+                    <option value="active" ${emp_status=="active"?'selected':''}>Active</option>
+                    <option value="inactive" ${emp_status=="inactive"?'selected':''}>Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="text-right mt-3 mb-3">
+              <button class="btn btn-secondary btn-round" type="submit">Update Employee Details</button>
+            </div>
+          </div>
+        </form>
+      `,{
+        smallBtn: true,
+        afterShow: function(instance, current){
+          if($.fn.daterangepicker){
+            let initialStart = moment().startOf('month');
+            let initialEnd = moment().endOf('month');
+            if(emp_dateRange){
+              const dates = emp_dateRange.trim().split('-');
+              if(dates.length === 2){
+                initialStart = moment(dates[0], 'DD/MM/YYYY');
+                initialEnd = moment(dates[1], 'DD/MM/YYYY');
+              }
+            }
+            $('#empDateRangeEdit').daterangepicker({
+              opens:'left',
+              startDate: initialStart,
+              endDate: initialEnd,
+              locale: { format:'DD/MM/YYYY' },
+              parentEl: current.content
+            }, function(start, end){
+              $('#dateRangeTextEdit').html(start.format('DD/MM/YYYY') + ' - ' + end.format('DD/MM/YYYY'));
+              $('#dateRangeEdit').val(start.format('DD/MM/YYYY') + '-' + end.format('DD/MM/YYYY'));
+            });
+          }
+        }
+      });
+    }
+
+    // --- Reset Password ---
+    function resetPassword(emp_id, emp_name){
+      $.fancybox.open(`
+        <form action="/admin/account/reset/employee/password/${emp_id}" method="POST" style="max-width: 660px;" class="fancybox-content">
+          <h2 class="mb-3">Reset password for ${emp_name}</h2>
+          <input type='hidden' name="employee_id" value='${emp_id}'/>
+          <input type='text' class="form-control mb-2" name="reset_password" id="emp_password" onkeyup="showHideBtn();" placeholder="Type password here.." required/>
+          <button class="btn btn-primary btn-block password_btn" id="submit-btn" disabled type="submit">Submit</button>
+        </form>
+      `);
+    }
+
+    function showHideBtn(){
+      var val = $('#emp_password').val();
+      $('.password_btn').prop("disabled", val.length < 3);
+    }
+
+    // --- View Password ---
+    function viewPassword(emp_id){
+      $.fancybox.open(`
+        <form action="/admin/account/view/password/${emp_id}" method="POST" style="max-width:660px;" class="fancybox-content">
+          <h2 class="mb-3">Enter your password to view</h2>
+          <input type='hidden' value=${emp_id} class="form-control mb-2" name="emp_id" id="emp_id" required/>
+          <input type='password' class="form-control mb-2" name="emp_password" id="emp_password" required/>
+          <button type="button" class="btn btn-primary" onclick="getEmployeePassword('${emp_id}')">Submit</button>
+        </form>
+      `);
+    }
+
+    function getEmployeePassword(emp_id){
+      const password = $('#emp_password').val()
+    }
+

@@ -1,0 +1,168 @@
+mixin customNavbar()
+  nav.navbar.navbar-header.navbar-expand-lg(data-background-color='blue2')
+  .container-fluid
+    #search-nav.collapse
+      form.navbar-left.navbar-form.nav-search.mr-md-3
+        .input-group
+          .input-group-prepend
+            button.btn.btn-search.pr-1(type='submit')
+              i.fa.fa-search.search-icon
+          input.form-control(type='text' placeholder='Search ...')
+    ul.navbar-nav.topbar-nav.ml-md-auto.align-items-center
+      li.nav-item.toggle-nav-search.hidden-caret
+        a.nav-link(data-toggle='collapse' href='faqs.html#search-nav' role='button' aria-expanded='false' aria-controls='search-nav')
+          i.fa.fa-search
+      li.nav-item.dropdown.hidden-caret
+        a#messageDropdown.nav-link.dropdown-toggle(href='faqs.html#' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+          i.fa.fa-envelope
+        ul.dropdown-menu.messages-notif-box.animated.fadeIn(aria-labelledby='messageDropdown')
+          li
+            .dropdown-title.d-flex.justify-content-between.align-items-center
+              | Messages
+              a.small(href='faqs.html#') Mark all as read
+          li
+            .message-notif-scroll.scrollbar-outer
+              .notif-center
+                a(href='faqs.html#')
+                  .notif-img
+                    img(src='/assets/img/jm_denis.jpg' alt='Img Profile')
+                  .notif-content
+                    span.subject Jimmy Denis
+                    span.block
+                      | How are you ?
+                    span.time 5 minutes ago
+                a(href='faqs.html#')
+                  .notif-img
+                    img(src='/assets/img/chadengle.jpg' alt='Img Profile')
+                  .notif-content
+                    span.subject Chad
+                    span.block
+                      | Ok, Thanks !
+                    span.time 12 minutes ago
+                a(href='faqs.html#')
+                  .notif-img
+                    img(src='/assets/img/mlane.jpg' alt='Img Profile')
+                  .notif-content
+                    span.subject Jhon Doe
+                    span.block
+                      | Ready for the meeting today...
+                    span.time 12 minutes ago
+                a(href='faqs.html#')
+                  .notif-img
+                    img(src='/assets/img/talha.jpg' alt='Img Profile')
+                  .notif-content
+                    span.subject Talha
+                    span.block
+                      | Hi, Apa Kabar ?
+                    span.time 17 minutes ago
+          li
+            a.see-all(href='javascript:void(0);')
+              | See all messages
+              i.fa.fa-angle-right
+      li.nav-item.dropdown.hidden-caret
+        a#notifDropdown.nav-link.dropdown-toggle(href='faqs.html#' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+          i.fa.fa-bell
+          span.notification 4
+        ul.dropdown-menu.notif-box.animated.fadeIn(aria-labelledby='notifDropdown')
+          li
+            .dropdown-title You have 4 new notification
+          li
+            .notif-center
+              a(href='faqs.html#')
+                .notif-icon.notif-primary
+                  i.fa.fa-user-plus
+                .notif-content
+                  span.block
+                    | New user registered
+                  span.time 5 minutes ago
+              a(href='faqs.html#')
+                .notif-icon.notif-success
+                  i.fa.fa-comment
+                .notif-content
+                  span.block
+                    | Rahmad commented on Admin
+                  span.time 12 minutes ago
+              a(href='faqs.html#')
+                .notif-img
+                  img(src='/assets/img/profile2.jpg' alt='Img Profile')
+                .notif-content
+                  span.block
+                    | Reza send messages to you
+                  span.time 12 minutes ago
+              a(href='faqs.html#')
+                .notif-icon.notif-danger
+                  i.fa.fa-heart
+                .notif-content
+                  span.block
+                    | Farrah liked Admin
+                  span.time 17 minutes ago
+          li
+            a.see-all(href='javascript:void(0);')
+              | See all notifications
+              i.fa.fa-angle-right
+      li.nav-item.dropdown.hidden-caret
+        a.nav-link(data-toggle='dropdown' href='faqs.html#' aria-expanded='false')
+          i.fas.fa-layer-group
+        .dropdown-menu.quick-actions.quick-actions-info.animated.fadeIn
+          .quick-actions-header
+            span.title.mb-1 Quick Actions
+            span.subtitle.op-8 Shortcuts
+          .quick-actions-scroll.scrollbar-outer
+            .quick-actions-items
+              .row.m-0
+                a.col-6.col-md-4.p-0(href='faqs.html#')
+                  .quick-actions-item
+                    .avatar-item.bg-danger.rounded-circle
+                      i.far.fa-calendar-alt
+                    span.text Calendar
+                a.col-6.col-md-4.p-0(href='faqs.html#')
+                  .quick-actions-item
+                    .avatar-item.bg-warning.rounded-circle
+                      i.fas.fa-map
+                    span.text Maps
+                a.col-6.col-md-4.p-0(href='faqs.html#')
+                  .quick-actions-item
+                    .avatar-item.bg-info.rounded-circle
+                      i.fas.fa-file-excel
+                    span.text Reports
+                a.col-6.col-md-4.p-0(href='faqs.html#')
+                  .quick-actions-item
+                    .avatar-item.bg-success.rounded-circle
+                      i.fas.fa-envelope
+                    span.text Emails
+                a.col-6.col-md-4.p-0(href='faqs.html#')
+                  .quick-actions-item
+                    .avatar-item.bg-primary.rounded-circle
+                      i.fas.fa-file-invoice-dollar
+                    span.text Invoice
+                a.col-6.col-md-4.p-0(href='faqs.html#')
+                  .quick-actions-item
+                    .avatar-item.bg-secondary.rounded-circle
+                      i.fas.fa-credit-card
+                    span.text Payments
+      li.nav-item
+        a.nav-link.quick-sidebar-toggler(href='faqs.html#')
+          i.fa.fa-th
+      li.nav-item.dropdown.hidden-caret
+        a.dropdown-toggle.profile-pic(data-toggle='dropdown' href='faqs.html#' aria-expanded='false')
+          .avatar-sm
+            img.avatar-img.rounded-circle(src='/assets/img/profile.jpg' alt='...')
+        ul.dropdown-menu.dropdown-user.animated.fadeIn
+          .dropdown-user-scroll.scrollbar-outer
+            li
+              .user-box
+                .avatar-lg
+                  img.avatar-img.rounded(src='/assets/img/profile.jpg' alt='image profile')
+                .u-text
+                  h4 Hizrian
+                  p.text-muted hello@example.com
+                  a.btn.btn-xs.btn-secondary.btn-sm(href='http://demo.themekita.com/atlantis/livepreview/examples/demo1/profile.html') View Profile
+            li
+              .dropdown-divider
+              a.dropdown-item(href='faqs.html#') My Profile
+              a.dropdown-item(href='faqs.html#') My Balance
+              a.dropdown-item(href='faqs.html#') Inbox
+              .dropdown-divider
+              a.dropdown-item(href='faqs.html#') Account Setting
+              .dropdown-divider
+              a.dropdown-item(href='faqs.html#') Logout

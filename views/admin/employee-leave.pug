@@ -1,0 +1,280 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View All leaves
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='javascript:void(0);' onclick=`addNewLeave()`) Add leave
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                .row
+                  .col-md-4
+                    .form-group
+                      label(for='from') From - To
+                      //- input#fromTo(type='text' name='from')
+                      #fromTo(style='background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%')
+                        i.fa.fa-calendar
+                        span(style="padding: 0 7px;")
+                        i.fa.fa-caret-down
+                  .col-md-4
+                    button.btn.btn-primary#clear_filter(type="button" style='margin-top:26px;' onclick="reloadPage();")
+                      | Clear Filter
+                  .col-md-2
+                hr
+                .table-responsive
+                  .col-sm-12
+                    table#all-leave.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Leave start
+                          th Leave end
+                          th Total day(s)
+                          th Reason
+                          th Action
+                      tbody
+                        each leave in leaves
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{leave.leave_start_obj.ll}
+                              td #{leave.leave_end_obj.ll}
+                              td #{leave.total_days == 1 ? "1 day" : `${leave.total_days} days`}
+                              td #{leave.leave_reason}
+                              td(style="text-align: center;")
+                                .form-button-action
+                                  button.btn.btn-link.btn-primary(type='button' data-toggle='tooltip' title="Edit leave" data-original-title="Edit leave" onclick=`editLeave('${leave._id}', '${leave.leave_start}', '${leave.leave_end}', '${leave.leave_reason}')`)
+                                    i.fa.fa-edit
+                .row
+
+  block script
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+
+  script.
+    $(document).ready(function() {
+      var tbl = $('#all-leave').DataTable({
+        ordering: false
+      });
+
+      var start = moment();
+      var end = moment();
+
+      function cb(start, end) {
+        $('#fromTo span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        let startDate = {
+          year: parseInt(start.format('YYYY')),
+          month: parseInt(start.format('MM')),
+          date: parseInt(start.format('DD'))
+        };
+        let endDate = {
+          year: parseInt(end.format('YYYY')),
+          month: parseInt(end.format('MM')),
+          date: parseInt(end.format('DD'))
+        };
+        swall("Please wait...");
+        $.ajax({
+          type: 'POST',
+          url: `/admin/leave/filter/date`,
+          dataType: "json",
+          data: {
+            start: startDate,
+            end: endDate
+          },
+          success: function(result) {
+            if (result.code == 200) {
+              swal.close();
+              tbl.clear().rows.add(result.data.newArr).draw();
+              return;
+            } else if (result.code == 309) {
+              swal.close();
+              swall("Something went wrong. Try again later!");
+            } else if (result.code == 401) {
+              swall("Something went wrong. Try again later!");
+            } else {
+              swal.close();
+              notifyy("Something went wrong! Try again later.", "danger");
+            }
+          }
+        })
+      }
+
+      $('#fromTo').daterangepicker({
+        startDate: start,
+        endDate: end,
+        locale: {
+          cancelLabel: 'Clear'
+        },
+        ranges: {
+          'Today': [moment(), moment()],
+          'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+          'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+          'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+          'This Month': [moment().startOf('month'), moment().endOf('month')],
+          'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+        }
+      }, cb);
+    });
+
+    function addNewLeave () {
+      $.fancybox.open(`
+        <form action="/admin/leave/create" method="POST" style="max-width:41%;">
+          <div class="card-body">
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>From</label>
+                  <input type="text" name="leave_start" value="" style="border-color: none !important;border-style: none !important;" required/>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>To</label>
+                  <input type="text" name="leave_end" value="" style="border-color: none !important;border-style: none !important;" required/>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Reason:</label>
+                  <textarea id="mention_task" name="leave_reason" style="width:100%;height:200px;max-width:100%;max-height:100px"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="text-right mt-3 mb-3">
+              <button class="btn btn-secondary btn-round" type="submit">Add leave</button>
+            </div>
+          </div>
+        </form>
+      `);
+      $('input[name="leave_start"]').daterangepicker({
+        startDate: moment(),
+        singleDatePicker: true,
+        showDropdowns: true,
+        locale: {
+          format: 'DD-MM-YYYY'
+        },
+        maxYear: parseInt(moment().format('YYYY'),10),
+        autoApply: true
+      });
+      $('input[name="leave_end"]').daterangepicker({
+        startDate: moment(),
+        singleDatePicker: true,
+        locale: {
+          format: 'DD-MM-YYYY'
+        },
+        maxYear: parseInt(moment().format('YYYY'),10),
+        autoApply: true
+      });
+    }
+
+    function editLeave(id, startTime, endTime, reason) {
+      $.fancybox.open(`
+        <form action="/admin/leave/edit/${id}" method="POST" style="max-width:41%;">
+          <div class="card-body">
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>From</label>
+                  <input type="text" name="leave_start" value="" style="border-color: none !important;border-style: none !important;" required/>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>To</label>
+                  <input type="text" name="leave_end" value="" style="border-color: none !important;border-style: none !important;" required/>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Reason:</label>
+                  <textarea id="mention_task" name="leave_reason" style="width:100%;height:200px;max-width:100%;max-height:100px">${reason}</textarea>
+                </div>
+              </div>
+            </div>
+            <div class="text-right mt-3 mb-3">
+              <button class="btn btn-secondary btn-round" type="submit">Update leave</button>
+            </div>
+          </div>
+        </form>
+      `);
+      $('input[name="leave_start"]').daterangepicker({
+        startDate: moment(new Date(startTime)),
+        singleDatePicker: true,
+        showDropdowns: true,
+        locale: {
+          format: 'DD-MM-YYYY'
+        },
+        maxYear: parseInt(moment().format('YYYY'),10),
+        autoApply: true
+      });
+      $('input[name="leave_end"]').daterangepicker({
+        startDate: moment(new Date(endTime)),
+        singleDatePicker: true,
+        locale: {
+          format: 'DD-MM-YYYY'
+        },
+        maxYear: parseInt(moment().format('YYYY'),10),
+        autoApply: true
+      });
+    }
+
+    function showHideBtn() {
+      var inputValue = document.getElementById("emp_password").value;
+      var inputArr = inputValue.split("");
+      if (inputArr.length >= 3) {
+        $('.password_btn').prop("disabled", false);
+      } else {
+        $('.password_btn').prop("disabled", true);
+      }
+    }
+
+    function swall(text) {
+      var SweetAlert2Demo = function () {
+        //== Demos
+        var initDemos = function () {
+          swal(text, {
+            buttons: false,
+            timer: 2000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+    }
+
+    function notifyy(text, type) {
+      $.notify({
+        message: text
+      },{
+        type: type,
+        showProgressbar: false
+      },
+      {
+        offset: 20,
+        spacing: 10,
+        z_index: 1031,
+        delay: 5000,
+        timer: 1000
+      });
+    }
+
+    function reloadPage() {
+      window.location.reload();
+    }

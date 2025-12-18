@@ -1,0 +1,61 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Edit Timesheet
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              form(action=`/admin/timesheet/edit/${timesheet._id}`, method="POST")
+                .card-body
+                  .table-responsive
+                    .col-sm-12
+                      table.display.table.table-bordered(role='grid', aria-describedby='basic-datatables_info')
+                          thead
+                            tr
+                              th.w-25 Select project
+                              th Date
+                              th Hour
+                              th.w-25 Notes
+                          tbody
+                            tr(tr_count = 0)
+                              td
+                                select.form-control(name='project_id', id="proj0" style="height: 30px !important;padding: 0px 10px;" class="sel_proj" required="")
+                                  each project in projects
+                                    option(value=project.project_id._id selected=(project.project_id._id.toString() == timesheet.project_id.toString() ? 'selected' : null)) #{project.project_id.name}
+                              td
+                                input.form-control.custom-input.date(type='text' id="date0" style="height: 30px !important;" name='worked_date' value=moment(timesheet.worked_date).format('L') required="")
+                              td
+                                input.form-control.custom-input.hour(type='text' style="height: 30px !important;" name='worked_hour' value=timesheet.worked_hour.toString() required="")
+                              td
+                                textarea.custom-input.notes(name="notes" placeholder="Any notes.." style="height: 32px; width: 100%; border: 1px solid rgb(235, 237, 242); margin-top: 3px; border-radius: 5px;") #{timesheet.notes}
+
+                                //- input.form-control.custom-input.notes(type='text' style="height: 30px !important;" name='notes' placeholder="Any notes.." value=timesheet.notes)
+                              //- td
+                              //-   button.btn.btn-color(type="submit" id="submit-btn") Add Product
+                  .card-action
+                    .row
+                      .col-md-12
+                        button.btn.btn-primary(type="submit") Update Timesheet
+                .row
+  block script
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+
+  script.
+    var allProjectsObj = !{JSON.stringify(projects)};
+    //- $('.date').val(moment().format('L'))
+    $('.date').daterangepicker({
+      singleDatePicker: true,
+      showDropdowns: true,
+      minYear: moment().year(),
+      maxYear: parseInt(moment().format('YYYY'),10),
+      autoApply: true
+    });

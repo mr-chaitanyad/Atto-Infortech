@@ -1,0 +1,545 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View All Orders
+              h5.text-white.op-7.mb-2 Welcome to Admin Panel
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/dashboard') Dashboard
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                //- +searchUsers()
+                pre= h.dump(pdf_purchase)
+                .table-responsive
+                  .col-sm-12
+                    table#multi-filter-select.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Unique ID
+                          th Client Name
+                          th Product names
+                          th Quantity wanted
+                          th Total Amount
+                          th Order date
+                          th View
+                      tbody
+                        each purchase in purchases
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{purchase.unique_id}
+                              td #{purchase.client_id.company_name}
+                              td #{purchase.packages.map(pack => pack.product_name)}
+                              td #{purchase.packages.map(pack => pack.input_qty).reduce((prev, next) => prev + next)}
+                              td #{new Intl.NumberFormat('en-IN', { maximumSignificantDigits: 3 }).format(`${purchase.packages.map(pack => pack.total_amt).reduce((prev, next) => prev + next)}`)} /-
+                              td #{purchase.createdAt.toString().split(" ").slice(0, 5).join(" ")}
+                              td
+                                a.btn.btn-link.btn-primary(href='javascript:void(0)', onclick=`viewDetail('${purchase.client_id.company_name}', '${purchase.client_id.transport}', '${purchase._id}', '${purchase.unique_id}', '${purchase.createdAt.toString()}', '${JSON.stringify(purchase.packages)}', '${purchase.reverse_order}', '${purchase.createdAt.toString().split(" ").slice(0, 5).join(" ")}')`)
+                                  i.fa.fa-eye
+
+  block script
+    //-- fancybox
+    script(src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js")
+
+  script.
+    $(document).ready(function() {
+      $('#multi-filter-select').DataTable({
+        ordering: false
+      });
+    });
+
+    function viewDetail(client_name, transport_name, purchase_id, unique_id, purchase_time, packages, reverse_order, order_date) {
+      $.ajax({
+        type: 'POST',
+        url: '/admin/package/get/pdf',
+        data: {
+          packages: JSON.parse(packages)
+        },
+        success: function (result) {
+          //- console.log(result);
+          $.fancybox.open(`
+            <div class="card">
+              <div class="card-header">
+                <div class="card-head-row">
+                  <div class="card-title">${client_name}</div>
+                </div>
+                <div class="">
+                  ${reverse_order == 0 ? `
+                    <a href="javascript:void(0)" onclick='reverseOrderModal(${JSON.stringify(packages)}, ${reverse_order}, "${purchase_id.toString()}")'>
+                      <span class="badge badge-primary badge-pill">Reverse all order</span>
+                  </a>
+                  `: ''}
+                </div>
+              </div>
+              <div class="card-body">
+                ${JSON.parse(packages).map(package => `
+                  <div class="d-flex">
+                    <div class="flex-1 ml-3 pt-1">
+                      <h6 class="text-uppercase fw-bold mb-1">
+                        ${package.product_name}
+                        <span class="text-primary pl-3">(${new Intl.NumberFormat('en-IN', { maximumSignificantDigits: 3 }).format(package.total_amt)} /-)</span>
+                      </h6>
+                      <span class="text-muted">${package.input_qty} quantity from ${package.warehouse_name} warehouse</span>
+                    </div>
+                    <div class="float-right pt-1">
+                      ${reverse_order == 1 ? `<a href='javascript:void(0)'><span class="badge badge-primary badge-pill">Order Reversed</span></a>` : reverse_order == 0 && package.input_qty == 0 ? `<a href='javascript:void(0)'><span class="badge badge-primary badge-pill">Qty Zero</span></a>` : reverse_order == 0 && package.input_qty != 0 ? `<a href="javascript:void(0)" style="margin-left:20px;" onclick="reverseEach('${package.product_name}', '${package.input_qty}', '${package.product_id}', '${package.warehouse_id}', '${package._id}', '${package.price}', '${package.total_amt}')">
+                          <span class="badge badge-primary badge-pill">Reverse</span>
+                        </a>` : ''}
+                    </div>
+                  </div>
+                  <div class="separator-dashed"></div>
+                `).join("")}
+                ${result.map(pdf => `
+                  <a href="javascript:void(0)" class="pdf-warehouse" onclick='generatePDF(${JSON.stringify(pdf.pack)}, "${client_name}", "${transport_name}", "${unique_id}", "${pdf.warehouse_name}", "${order_date}", "${reverse_order}")'>
+                    <span class="badge badge-primary badge-pill">Generate PDF (${pdf.warehouse_name})</span>
+                  </a>
+                `).join("")}
+              </div>
+            </div>
+          `);
+        }
+      })
+    }
+
+    function generatePDF(packs, client_name, transport_name, unique_id, warehouse_name, order_date, reverse_order) {
+      $.fancybox.close();
+      var SweetAlert2Demo = function () {
+
+        //== Demos
+        var initDemos = function () {
+          swal("Please wait while pdf is generating...", {
+            buttons: false,
+            timer: 12000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+
+      $.ajax({
+        type: 'POST',
+        url: '/admin/package/generate/pdf',
+        data: {
+          mainObj: packs,
+          client_name,
+          transport_name,
+          generated_on: new Date(),
+          unique_id,
+          warehouse_name,
+          order_date,
+          in_total: packs.map(pack => parseInt(pack.total_amt)).reduce((prev, next) => prev + next),
+          reverse_order
+        },
+        success: function(result) {
+          //- console.log(result);
+          //- return;
+          if (result.type == 'success') {
+            swal.close();
+            $.notify({
+              message: 'PDF Generated!'
+            },{
+              type: 'success',
+              showProgressbar: false
+            },
+            {
+              offset: 20,
+              spacing: 10,
+              z_index: 1031,
+              delay: 5000,
+              timer: 1000
+            });
+
+            setTimeout(function () {
+              //- window.location.href = result.fileName;
+              var win = window.open(result.fileName, "_blank") || window.location.replace(result.fileName);
+              win.onload = function () {
+                $.ajax({
+                  type: 'POST',
+                  url: '/api/helper/remove/pdf',
+                  data: {
+                    file: result.file
+                  },
+                  success: function (final) {
+                    if (final.message == 'success') {
+                      console.log('file got deleted');
+                      return;
+                    } else {
+                      $.notify({
+                        message: 'File not getting deleted!'
+                      },{
+                        type: 'error',
+                        showProgressbar: false
+                      },
+                      {
+                        offset: 20,
+                        spacing: 10,
+                        z_index: 1031,
+                        delay: 5000,
+                        timer: 1000
+                      });
+                    }
+                  }
+                })
+              }
+            }, 1000)
+            return;
+          } else {
+            $.notify({
+              message: 'Something went wrong!'
+            },{
+              type: 'danger',
+              showProgressbar: false
+            },
+            {
+              offset: 20,
+              spacing: 10,
+              z_index: 1031,
+              delay: 5000,
+              timer: 1000
+            });
+            return;
+          }
+        }
+      })
+      return;
+    }
+
+    //- function generatePDFf(client_name, transport_name, product_name, total_amt, qty, warehouse_name) {
+    //-   const pdfObj = {
+    //-     client_name,
+    //-     transport_name,
+    //-     product_name,
+    //-     total_amt,
+    //-     qty,
+    //-     warehouse_name
+    //-   }
+
+    //-   $(document).ready(function () {
+
+    //-     $.fancybox.close();
+
+    //-     var SweetAlert2Demo = function () {
+
+    //-       //== Demos
+    //-       var initDemos = function () {
+    //-         swal("Please wait while pdf is generating...", {
+    //-           buttons: false,
+    //-           timer: 12000,
+    //-           backdrop:true,
+    //-           closeOnClickOutside: false,
+    //-           closeOnEsc: false
+    //-         })
+    //-       };
+
+    //-       return {
+    //-           //== Init
+    //-           init: function () {
+    //-             initDemos();
+    //-           },
+    //-         };
+    //-       }();
+
+    //-     jQuery(document).ready(function () {
+    //-       SweetAlert2Demo.init();
+    //-     });
+    //-   })
+
+
+    //-   //- $('#myOverlay').show();
+    //-   //- $('#loadingGIF').show();
+
+    //-   //- return;
+
+    //-   $.ajax({
+    //-     type: 'POST',
+    //-     url: '/admin/package/generate/pdf',
+    //-     data: {
+    //-       mainObj: pdfObj,
+    //-     },
+    //-     success: function(result) {
+    //-       //- console.log(result);
+    //-       //- return;
+    //-       if (result.type == 'success') {
+    //-         swal.close();
+    //-         $.notify({
+    //-           message: 'PDF Generated!'
+    //-         },{
+    //-           type: 'success',
+    //-           showProgressbar: false
+    //-         },
+    //-         {
+    //-           offset: 20,
+    //-           spacing: 10,
+    //-           z_index: 1031,
+    //-           delay: 5000,
+    //-           timer: 1000
+    //-         });
+
+    //-         setTimeout(function () {
+    //-           //- window.location.href = result.fileName;
+    //-           window.open(result.fileName, "_blank") || window.location.replace(result.fileName);
+    //-         }, 1000)
+    //-         return;
+    //-       } else {
+    //-         $.notify({
+    //-           message: 'Something went wrong!'
+    //-         },{
+    //-           type: 'danger',
+    //-           showProgressbar: false
+    //-         },
+    //-         {
+    //-           offset: 20,
+    //-           spacing: 10,
+    //-           z_index: 1031,
+    //-           delay: 5000,
+    //-           timer: 1000
+    //-         });
+    //-         return;
+    //-       }
+    //-     }
+    //-   })
+    //- }
+
+    function reverseOrderModal(packages, reverse_order, purchase_id) {
+      $.fancybox.close();
+      var SweetAlert2Demo = function () {
+          var initDemos = function () {
+            swal({
+              title: 'Are you sure?',
+              text: "You won't be able to revert this!",
+              icon: 'warning',
+              buttons:{
+                cancel: {
+                  visible: true,
+                  text : 'No, cancel!',
+                  className: 'btn mr-2 btn-black'
+                },
+                confirm: {
+                  text : 'Reverse all order',
+                  className : 'btn btn-primary'
+                }
+              }
+            }).then((willDelete) => {
+              if (willDelete) {
+                $.ajax({
+                  type: 'POST',
+                  url: '/admin/package/reverse/all',
+                  data: {
+                    mainObj: JSON.parse(packages),
+                    is_reverse: reverse_order,
+                    purchase_id: purchase_id
+                  },
+                  success: function (result) {
+                    console.log('success');
+                    if (result.type == 'success') {
+                      swal("Order reversed successfully!", {
+                        icon: "success",
+                        buttons : {
+                          confirm : {
+                            className: 'btn btn-primary'
+                          }
+                        }
+                      }).then(success => {
+                        if (success) {
+                          window.location.reload();
+                          return;
+                        }
+                      });
+                    } else if (result.type == 'error' && result.code == '400') {
+                      swal("This order already has been reversed!", {
+                        buttons: false,
+                        timer: 2000,
+                        backdrop:true,
+                        closeOnClickOutside: false,
+                        closeOnEsc: false
+                      });
+                    } else if (result.type == 'error' && result.code == '500') {
+                      swal("Something went wrong!", {
+                        buttons: false,
+                        timer: 1500,
+                        backdrop:true,
+                        closeOnClickOutside: false,
+                        closeOnEsc: false
+                      });
+                    }
+                  }
+                })
+              } else {
+                swal("Reverse order has been canceled!", {
+                  buttons: false,
+                  timer: 1500,
+                  backdrop:true,
+                  closeOnClickOutside: false,
+                  closeOnEsc: false
+                });
+                return;
+              }
+            });
+          };
+          return {
+              //== Init
+              init: function () {
+                initDemos();
+              },
+            };
+          }();
+        jQuery(document).ready(function () {
+          SweetAlert2Demo.init();
+        });
+    }
+
+    function reverseEach(product_name, input_qty, product_id, warehouse_id, package_id, price, total_amt) {
+      //- alert(package_id);
+      //- return;
+      $.fancybox.close();
+      var SweetAlert2Demo = function () {
+        var initDemos = function () {
+          swal({
+            onOpen: function () {
+              alert('heyy');
+              swal.disableConfirmButton();
+            },
+            title: `Reverse ${product_name} Order`,
+            text: `Your input cannot be more than ${input_qty} qty.`,
+            html: `<br><input class="form-control" onkeyup="checkNumber('${input_qty}')" placeholder="Enter qty" id="swal-input">`,
+            content: {
+              element: "input",
+              onkeyup: `checkNumber('${input_qty}')`,
+              attributes: {
+                placeholder: "Enter qty",
+                value: input_qty,
+                type: "text",
+                id: "swal-input",
+                className: "form-control",
+              },
+            },
+            buttons: {
+              cancel: {
+                visible: true,
+                text : 'No, cancel!',
+                className: 'btn mr-2 btn-black'
+              },
+              confirm: {
+                text : 'Yes, Reverse!',
+                className : 'btn btn-primary'
+              }
+            },
+          }).then(
+          function(reverse) {
+            //- swal("", "You entered : " + $('#swal-input').val(), "success");
+              if (reverse) {
+                if (isNaN($('#swal-input').val())) {
+                  alert('Your input is not a number! Try again.');
+                  return;
+                } else if (parseInt($('#swal-input').val()) > parseInt(input_qty)) {
+                  alert('Your input is more than the quantity! Try again.');
+                  return;
+                } else if ($('#swal-input').val().includes('.') || $('#swal-input').val().includes('-') || $('#swal-input').val().includes('+')) {
+                  alert('This is not a valid number! Try again.');
+                  return;
+                }
+                //- swal("", "You entered : " + $('#swal-input').val(), "success");
+                $.ajax({
+                  type: 'POST',
+                  url: '/admin/package/reverse/one',
+                  data: {
+                    product_id,
+                    warehouse_id,
+                    input_qty: $('#swal-input').val(),
+                    available_qty: input_qty,
+                    package_id,
+                    price,
+                    total_amt
+                  },
+                  success: function (result) {
+                    if (result.type == 'success') {
+                      swal("Order reversed successfully!", {
+                        icon: "success",
+                        buttons : {
+                          confirm : {
+                            className: 'btn btn-primary'
+                          }
+                        }
+                      }).then(success => {
+                        if (success) {
+                          window.location.reload();
+                          return;
+                        }
+                      });
+                    } else if (result.type == 'error' && result.code == '500') {
+                      swal("Something went wrong!", {
+                        buttons: false,
+                        timer: 1500,
+                        backdrop:true,
+                        closeOnClickOutside: false,
+                        closeOnEsc: false
+                      });
+                    }
+                  }
+                })
+              } else {
+                swal("Reverse order has been canceled!", {
+                  buttons: false,
+                  timer: 1500,
+                  backdrop:true,
+                  closeOnClickOutside: false,
+                  closeOnEsc: false
+                });
+                return;
+              }
+            }
+          )
+        };
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+    }
+
+    function checkNumber(qty) {
+      //- var x = document.getElementById("qty_text").value;
+
+      // If x is Not a Number or less than one or greater than 10
+      if (isNaN(x)) {
+        alert('yessss');
+        //- text = "Your input is not a number.";
+        //- document.getElementById("submit-btn").disabled = true;
+      } else if (parseInt(x) > parseInt(qty)) {
+        alert('yessss');
+        //- text = "Your input is more than the quantity. Please check!";
+        //- document.getElementById("submit-btn").disabled = true;
+      } else if (x.includes('.') || x.includes('-') || x.includes('+')) {
+        alert('yessss');
+        //- text = "This is not a valid number. Please check!";
+        //- document.getElementById("submit-btn").disabled = true;
+      } else {
+        //- text = "";
+        //- document.getElementById("submit-btn").disabled = false;
+      }
+      //- document.getElementById("demo").innerHTML = text;
+    }

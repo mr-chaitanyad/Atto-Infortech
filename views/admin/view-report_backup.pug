@@ -1,0 +1,347 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Reports
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+      .page-inner
+        .row
+          .col-md-12
+            //- pre= h.dump(reports)
+            .card.card-with-nav
+              .card-body
+                .row
+                  .col-md-3
+                    .form-group
+                      label(for='from') From - To
+                      //- input#fromTo(type='text' name='from')
+                      #fromTo(style='background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%')
+                        i.fa.fa-calendar
+                        span(style="padding: 0 7px;")
+                        i.fa.fa-caret-down
+                      a#clr_fromTo(href="javascript:void(0)") Clear filter
+                  .col-md-3
+                    .form-group
+                      label(for='employees') Select Employees
+                      select#sel_emp.form-control.select2(name='sel_emp')
+                        option(value='') Select Employees
+                        each employee in employees
+                          option(value=employee._id) #{employee.name}
+                      a#clr_emp(href="javascript:void(0)") Clear filter
+                  .col-md-3
+                    .form-group
+                      label(for='employees') Select Projects
+                      select#sel_proj.form-control.select2(name='sel_emp')
+                        option(value='') Select Projects
+                        each project in projects
+                          option(value=project._id) #{project.name}
+                      a#clr_proj(href="javascript:void(0)") Clear filter
+                  .col-md-2
+                    label(for='employees') &nbsp;
+                    button.btn.btn-primary#clear_filter(type="button" style='margin-top:36px;')
+                      | Clear Filter
+                hr
+                .table-responsive
+                  .col-sm-12
+                    table#all-reports.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Employee Name
+                          th Total worked hour
+                          th Action
+                      tbody
+                        each report in reports
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{report.employee ? report.employee.name : "Not Provided"}
+                              td #{report.total_hour} hour(s)
+                              td
+                                if report.total_hour
+                                  a(href="javascript:void(0);" onclick=`viewDetails('${report._id}', '${report.employee ? report.employee.name : ""}')`) View details
+                                else
+                                  | No View
+                .row
+  block script
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+
+  script.
+    var tbl;
+    var filterUrl;
+    var fromTo = "";
+    var selEmp = "";
+    var selProj = "";
+    var dateArr = [];
+    $(document).ready(function () {
+      tbl = $('#all-reports').DataTable({
+        ordering: false
+      });
+
+      $('#sel_emp').select2({
+        type: 'bootstrap'
+      });
+
+      $('#sel_proj').select2({
+        type: 'bootstrap'
+      });
+
+      $("#clr_proj").css('visibility', 'hidden');
+      $("#clr_emp").css('visibility', 'hidden');
+      $("#clr_fromTo").css('visibility', 'hidden');
+
+      $('#clear_filter').click(function () {
+        window.location.reload();
+        return;
+      })
+
+      var start = moment();
+      var end = moment();
+
+      function cb(start, end) {
+        $('#fromTo span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        let startDate = {
+          year: parseInt(start.format('YYYY')),
+          month: parseInt(start.format('MM')),
+          date: parseInt(start.format('DD'))
+        };
+        let endDate = {
+          year: parseInt(end.format('YYYY')),
+          month: parseInt(end.format('MM')),
+          date: parseInt(end.format('DD'))
+        };
+        $("#clr_fromTo").css('visibility', 'visible');
+        dateArr = {startDate: startDate, endDate: endDate};
+        fromTo = dateArr;
+        filterUrl = `/admin/report/filter?fromTo=${JSON.stringify(dateArr)}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      }
+
+      $('#fromTo').daterangepicker({
+          startDate: start,
+          endDate: end,
+          autoUpdateInput: false,
+          locale: {
+            cancelLabel: 'Clear'
+          }
+      }, cb);
+
+      $('#clr_proj').click(function (e) {
+        //- $('#sel_proj').prop('selectedIndex', 0);
+        $("#sel_proj").val('').trigger('change')
+        $("#clr_proj").css('visibility', 'hidden');
+        selProj = "";
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#clr_emp').click(function (e) {
+        //- $('#sel_emp').prop('selectedIndex', 0);
+        $("#sel_emp").val('').trigger('change')
+        $("#clr_emp").css('visibility', 'hidden');
+        selEmp = "";
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#clr_fromTo').click(function (e) {
+        $('#fromTo span').html("");
+        $("#clr_fromTo").css('visibility', 'hidden');
+        fromTo = "";
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#sel_emp').change(function() {
+        selEmp = $('#sel_emp').val();
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        $("#clr_emp").css('visibility', 'visible');
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#sel_proj').change(function() {
+        selProj = $('#sel_proj').val();
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        $("#clr_proj").css('visibility', 'visible');
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+    });
+
+    function ajaxRequest(url) {
+      swall('Please wait...');
+      $.ajax({
+        type: 'POST',
+        url: url,
+        dataType: "json",
+        data: {
+        },
+        success: function(result) {
+          swal.close();
+          //- console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            tbl.clear().rows.add(result.data.newArr).draw();
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swall("Something went wrong. Try again later!");
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+          }
+        }
+      })
+    }
+
+    function viewDetails(emp_id, employee_name) {
+      swall("Please wait...");
+      $.ajax({
+        type: 'POST',
+        url: `/admin/report/view/details/employees`,
+        dataType: "json",
+        data: {
+          employee_id: emp_id
+        },
+        success: function(result) {
+          console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            //- tbl.clear().rows.add(result.data.newArr).draw();
+            $.fancybox.open(`
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-head-row">
+                    <div class="card-title">${employee_name}</div>
+                  </div>
+                  <div class="">
+                    <span class="badge badge-primary badge-pill">View all details</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                ${(result.data).map(each => `
+                  <div class="d-flex">
+                    <div class="flex-1 ml-3 pt-1">
+                      <h6 class="text-uppercase fw-bold mb-1">
+                        ${each.proj.name}
+                      </h6>
+                    </div>
+                    <div class="float-right pt-1" style="margin-left:90px;">
+                      <a href='javascript:void(0)'><span class="badge badge-primary badge-pill" style="font-size:12px;">${each.total_hour.$numberDecimal} hour(s)</span></a>
+                    </div>
+                  </div>
+                  <div class="separator-dashed"></div>
+                `).join("")}
+              </div>
+              </div>
+            `);
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+            swal.close();
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+            swal.close();
+          }
+        }
+      })
+    }
+
+    function viewDetailsAccordingToDate(emp_id, employee_name, startYear, startMonth, startDate, endYear, endMonth, endDate) {
+      $.ajax({
+        type: 'POST',
+        url: `/admin/report/view/details/employees/by/date`,
+        dataType: "json",
+        data: {
+          employee_id: emp_id,
+          start: { year: startYear, month: startMonth, date: startDate},
+          end: { year: endYear, month: endMonth, date: endDate}
+        },
+        success: function(result) {
+          console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            //- tbl.clear().rows.add(result.data.newArr).draw();
+            $.fancybox.open(`
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-head-row">
+                    <div class="card-title">${employee_name}</div>
+                  </div>
+                  <div class="">
+                    <span class="badge badge-primary badge-pill">View all details</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                ${(result.data).map(each => `
+                  <div class="d-flex">
+                    <div class="flex-1 ml-3 pt-1">
+                      <h6 class="text-uppercase fw-bold mb-1">
+                        ${each.proj.name}
+                      </h6>
+                    </div>
+                    <div class="float-right pt-1" style="margin-left:90px;">
+                      <a href='javascript:void(0)'><span class="badge badge-primary badge-pill" style="font-size:12px;">${each.total_hour} hour(s)</span></a>
+                    </div>
+                  </div>
+                  <div class="separator-dashed"></div>
+                `).join("")}
+              </div>
+              </div>
+            `);
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+            swal.close();
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+            swal.close();
+          }
+        }
+      })
+    }
+
+    function swall(text) {
+      var SweetAlert2Demo = function () {
+        //== Demos
+        var initDemos = function () {
+          swal(text, {
+            buttons: false,
+            timer: 2000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+    }

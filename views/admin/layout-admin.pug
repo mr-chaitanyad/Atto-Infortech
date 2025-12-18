@@ -1,0 +1,244 @@
+doctype html
+html(lang='en')
+	head
+		meta(http-equiv='Content-Type', content='text/html; charset=utf-8')
+		meta(http-equiv='X-UA-Compatible', content='IE=edge')
+		title= `${title} | Atto Infotech`
+		meta(content='width=device-width, initial-scale=1.0, shrink-to-fit=no', name='viewport')
+		link(rel='icon', href='/admin/assets/img/atto_ico.ico', type='image/x-icon')
+		//--- Fonts and icons
+		script(src='/admin/assets/js/plugin/webfont/webfont.min.js')
+		script.
+			WebFont.load({
+			google: { "families": ["Lato:300,400,700,900"] },
+			custom: { "families": ["Flaticon", "Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"], urls: ['/admin/assets/css/fonts.min.css'] },
+			active: function () {
+			sessionStorage.fonts = true;
+			}
+			});
+		//--- CSS Files
+		link(rel='stylesheet', href='/admin/assets/css/bootstrap.min.css')
+		link(rel='stylesheet', href='/admin/assets/css/atlantis.css')
+		link(rel='stylesheet', type='text/css', href='/admin/assets/css/custom.css')
+		//- link(rel="stylesheet", href="/admin/dist/css/dropify.css")
+		link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css")
+		link(rel="stylesheet", href="/admin/fancybox/jquery.fancybox.css")
+
+		//- script(src='/assets/js/core/jquery.3.2.1.min.js')
+		script(src='https://code.jquery.com/jquery-2.2.4.min.js')
+		script(src='https://code.jquery.com/ui/1.12.1/jquery-ui.min.js')
+
+		//- data- table
+		link(rel="stylesheet", href="https://cdn.datatables.net/buttons/1.6.4/css/buttons.dataTables.min.css")
+		link(rel='stylesheet' type='text/css' href='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css')
+		link(rel="stylesheet", href="/admin/assets/css/demo.css")
+
+	body
+		.wrapper.fullheight-side.sidebar_minimize
+			block messages
+				if locals.flashes
+					.inner
+						.flash-messages
+							- const categories = Object.keys(locals.flashes)
+							each category in categories
+								each message in flashes[category]
+									.flash(class=`flash--${category}`)
+										p.flash__text!= message
+										button.flash__remove(onClick="this.parentElement.remove()") &times;
+			if trackerHTML == 1
+				if !lock
+					.main-header
+						nav.navbar.navbar-header.navbar-expand-lg(data-background-color='blue2')
+							.container-fluid
+								ul.navbar-nav.topbar-nav.ml-md-auto.align-items-center
+									li.nav-item.dropdown.hidden-caret
+										//- a#messageDropdown.nav-link.dropdown-toggle(href='faqs.html#' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+											i.fa.fa-envelope
+										input(type="text", value=`${userId}` hidden="true")
+										button.btn.btn-primary.punch_in#punch_in(data-userId=`${userId}`, data-punchIn=`${punchIn}`) Punch In
+									li.nav-item.dropdown.hidden-caret
+										//- a#notifDropdown.nav-link.dropdown-toggle(href='faqs.html#' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+											i.fa.fa-bell
+										button.btn.btn-primary.punch_in#punch_out(data-userId=`${userId}`, data-punchOut=`${punchOut}`) Punch Out
+									li.nav-item
+										a.nav-link.quick-sidebar-toggler.timer-count(href='javascript:void(0);', style="font-size:20px;") 00:00:00
+
+			//- Logo Header
+			.logo-header.position-fixed(data-background-color='blue')
+				a.logo(href='/admin/dashboard')
+					img.navbar-brand(src='/admin/assets/img/logo_header.png', alt='inventory App', width=150)
+				button.navbar-toggler.sidenav-toggler.ml-auto(type='button', data-toggle='collapse', data-target='collapse', aria-expanded='false', aria-label='Toggle navigation')
+					span.navbar-toggler-icon
+						i.icon-menu
+				button.topbar-toggler.more
+					i.icon-options-vertical
+				.nav-toggle
+					button.btn.btn-toggle.toggle-sidebar
+						i.icon-menu
+			//- End Logo Header
+			//- Sidebar
+			.sidebar.sidebar-style-2(data-background-color='blue')
+				.sidebar-wrapper.scrollbar.scrollbar-inner
+					.sidebar-content
+						.user
+							.info
+								a.collapsed(data-toggle='collapse', href='#collapseExample', aria-expanded='false')
+									span
+										| Hi, #{session.user.name.split(" ").slice(0, 1).join(' ')}
+										span.user-level #{session.user.email}
+										span.caret
+								.clearfix
+								#collapseExample.in.collapse(style='')
+									ul.nav
+										li
+											a(href='/admin/account/my')
+												span.link-collapse My Account
+										li
+											a(href='/admin/account/logout')
+												span.link-collapse Logout
+						ul.nav
+							li.nav-item.active
+								a.collapsed(href='/admin/dashboard')
+									i.fas.fa-home
+									p Dashboard
+							li.nav-section
+								span.sidebar-mini-icon
+									i.fa.fa-ellipsis-h
+								h4.text-section Navigation
+							if session.user && session.user.role === 1
+								li.nav-item
+									a.collapsed(href='/admin/project/all')
+										i.fas.fa-book-open
+										p Projects
+							if session.user && session.user.role === 1
+								li.nav-item
+									a.collapsed(href='/admin/project/sub/task/all')
+										i.fas.fa-bezier-curve
+										p Sub Task
+							if session.user && session.user.role === 1
+								li.nav-item
+									a.collapsed(href='/admin/account/all/employees')
+										i.far.fa-user
+										p Employees
+							if session.user.resource_based === 0
+								li.nav-item
+									a.collapsed(href=`/admin/credential/all`)
+										i.fas.fa-key
+										p Credentials Base
+							li.nav-item
+								a.collapsed(href=`/admin/tracker/track/${session.user._id}`)
+									i.far.fa-clock
+									p Tracker
+							//- li.nav-item
+							//- 	a.collapsed(href='/admin/employee/all')
+							//- 		i.far.fa-user
+							//- 		p Attendences
+							//- pre= h.dump(!session.user.resource_based === 0)
+							if session.user.resource_based === 0
+							li.nav-item
+								a.collapsed(href='/admin/timesheet/view')
+									i.fas.fa-user-clock
+									p Timesheet
+							if session.user && session.user.role === 1
+								li.nav-item
+									a.collapsed(href='/admin/report/view')
+										i.fas.fa-book
+										p Reports
+							li.nav-item
+								a.collapsed(href='/admin/leave/all')
+									i.fas.fa-id-badge
+									p Leaves
+							//- if session.user && session.user.role === 1
+							//- 	li.nav-item
+							//- 		a.collapsed(href='/admin/product/all')
+							//- 			i.fas.fa-box
+							//- 			p Users
+			//--- End Sidebar
+			.content
+				block content
+			.custom-template
+
+
+
+				//--- Core JS Files
+				script(src='/admin/assets/js/core/popper.min.js')
+				script(src='/admin/assets/js/core/bootstrap.min.js')
+				//--- Custom js
+				//-- Fancy box 3
+				script(src="/admin/fancybox/jquery.fancybox.js")
+				//- script(src="/custom/data-products.js")
+				script(src='/admin/custom/searchproducts.js')
+				//--- jQuery UI
+				//- script(src='/assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js')
+				//- script(src='/assets/js/plugin/jquery-ui-touch-punch/jquery.ui.touch-punch.min.js')
+				//--- jQuery Scrollbar
+				script(src='/admin/assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js')
+				//--- flatpickr
+				script(src='https://cdn.jsdelivr.net/npm/flatpickr')
+				//-- Moment JS
+				script(src='/admin/assets/js/plugin/moment/moment.min.js')
+				//-- Chart JS
+				script(src='/admin/assets/js/plugin/chart.js/chart.min.js')
+				//-- jQuery Sparkline
+				script(src='/admin/assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js')
+				//-- Chart Circle
+				script(src='/admin/assets/js/plugin/chart-circle/circles.min.js')
+				//-- Datatables
+				script(src='/admin/assets/js/plugin/datatables/datatables.min.js')
+				//- script(src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js')
+				script(src='https://cdn.datatables.net/buttons/1.6.4/js/dataTables.buttons.min.js')
+				script(src='https://cdn.datatables.net/buttons/1.6.4/js/buttons.flash.min.js')
+				script(src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js')
+				script(src='https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js')
+				script(src='https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js')
+				script(src='https://cdn.datatables.net/buttons/1.6.4/js/buttons.html5.min.js')
+				script(src='https://cdn.datatables.net/buttons/1.6.4/js/buttons.print.min.js')
+
+				//-- Dropify
+				//- script(src="/admin/dist/js/dropify.js")
+				//-- Bootstrap Notify
+				script(src='/admin/assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js')
+				//-- Bootstrap Toggle
+				script(src='/admin/assets/js/plugin/bootstrap-toggle/bootstrap-toggle.min.js')
+				//-- jQuery Vector Maps
+				script(src='/admin/assets/js/plugin/jqvmap/jquery.vmap.min.js')
+				script(src='/admin/assets/js/plugin/jqvmap/maps/jquery.vmap.world.js')
+				//-- Google Maps Plugin
+				script(src='/admin/assets/js/plugin/gmaps/gmaps.js')
+				//-- Dropzone
+				script(src='/admin/assets/js/plugin/dropzone/dropzone.min.js')
+				//-- Fullcalendar
+				script(src='/admin/assets/js/plugin/fullcalendar/fullcalendar.min.js')
+				//-- Bootstrap Tagsinput
+				script(src='/admin/assets/js/plugin/bootstrap-tagsinput/bootstrap-tagsinput.min.js')
+				//-- Bootstrap Wizard
+				script(src='/admin/assets/js/plugin/bootstrap-wizard/bootstrapwizard.js')
+				//-- jQuery Validation
+				script(src='/admin/assets/js/plugin/jquery.validate/jquery.validate.min.js')
+				//-- Summernote
+				script(src='/admin/assets/js/plugin/summernote/summernote-bs4.min.js')
+				//-- Select2
+				script(src='/admin/assets/js/plugin/select2/select2.full.min.js')
+				//-- Sweet Alert
+				script(src='/admin/assets/js/plugin/sweetalert/sweetalert.min.js')
+				//-- Owl Carousel
+				script(src='/admin/assets/js/plugin/owl-carousel/owl.carousel.min.js')
+				//-- Magnific Popup
+				script(src='/admin/assets/js/plugin/jquery.magnific-popup/jquery.magnific-popup.min.js')
+				//-- Atlantis JS
+				script(src='/admin/assets/js/atlantis.min.js')
+				script(src='/admin/custom/multiselect.min.js')
+				//-- Atlantis DEMO methods, don't include it in your project!
+				//- script(src='/admin/assets/js/setting-demo.js')
+				script(src='/admin/assets/js/demo.js')
+				script.
+					$('.flash-messages').delay(4100).hide('slow');
+					$("#dropdown1").select2({
+						type: "bootstrap"
+					})
+					$.getJSON("http://jsonip.com", function (data) {
+						console.log(data.ip);
+						$(".ipaddress").text(data.ip);
+						$('#punch_in').attr('data-punchInIp', data.ip);
+						$('#punch_out').attr('data-punchOutIp', data.ip);
+					});

@@ -1,0 +1,48 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View All Packaging slip
+              h5.text-white.op-7.mb-2 Welcome to Admin Panel
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/dashboard') Dashboard
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                //- +searchUsers()
+                //- pre= h.dump(packages)
+                .table-responsive
+                  .col-sm-12
+                    table#multi-filter-select.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Product Name
+                          th Warehouse Name
+                          th Price is
+                          th Quantity wanted
+                          th Total Amount
+                          th Order date
+                      tbody
+                        each packagea in packages
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{packagea.product_name}
+                              td #{packagea.warehouse_name}
+                              td #{packagea.price}
+                              td #{packagea.input_qty}
+                              td #{packagea.total_amt} /-
+                              td #{packagea.createdAt.toString().split(" ").slice(0, 5).join(" ")}
+                .row
+  script.
+    $(document).ready(function() {
+      $('#multi-filter-select').DataTable({
+        ordering: false
+      });
+    });

@@ -1,0 +1,445 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Timesheet
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+            .ml-md-auto.py-2.py-md-0
+              a#ExportReporttoExcel.btn.btn-white.btn-border.btn-round.mr-2(href='javascript:void(0)',style="height: 45px;margin-top: 0px;") Export to Excel
+              a.btn.btn-white.btn-border.btn-round.mr-2#clear_filter(href='javascript:void(0);') Clear Filter
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body(style="padding-top: 0px !important;")
+                .row
+                  .col-md-3
+                    .form-group
+                      label(for='from') From
+                      //- input#fromTo(type='text' name='from')
+                      #fromTo(style='background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%')
+                        i.fa.fa-calendar
+                        span(style="padding: 0 7px;")
+                        i.fa.fa-caret-down
+                  .col-md-3
+                    .form-group
+                      label(for='exampleFormControlSelect') Select Project
+                      select#dropdown1.form-control.select2(name='theme')
+                        option(value='') Select Project
+                        each project in projects
+                          option(value=`${project.name}`) #{project.name}
+                  .col-md-3
+                    .form-group
+                      label(for='exampleFormControlSelect') Select Employee
+                      select#dropdown2.form-control.select2(name='theme')
+                        option(value='') Select Employee
+                        each user in users
+                          option(value=`${user.name}`) #{user.name}
+                  .col-md-3
+                    .form-group
+                      label(for='exampleFormControlSelect') Search
+                      input.form-control#searchbox(type='text' placeholder='Search...' name='search')
+                hr
+                //- pre= h.dump(projects)
+                .table-responsive
+                  .col-sm-12
+                    table#all-timesheet.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr
+                          th
+                          th
+                          th
+                          th.header_tot Total Hour:
+                          th
+                        tr(role='row')
+                          th.w-25 Project Name
+                          th Employee Name
+                          th Worked Date
+                          th Worked Hour
+                          th.w-25 Note
+                          th Submitted on
+                          th Action(s)
+                      tbody
+                        //- each timesheet in timesheets
+                        //-   a(href="#")
+                        //-     tr.odd(role='row')
+                        //-       td.sorting_1 #{ timesheet.project_id && timesheet.project_id.name ? timesheet.project_id.name : "Not Provided"}
+                        //-       td #{timesheet.employee_id && timesheet.employee_id.name ? timesheet.employee_id.name : "Not Provided"}
+                        //-       td #{timesheet.worked_date_obj.ll}
+                        //-       td #{timesheet.worked_hour} hour
+                        //-       td #{timesheet.notes ? timesheet.notes : "Not Provided"}
+                      tfoot
+                        tr
+                          th
+                          th
+                          th Total Hour:
+                          th
+                          th
+                .row
+
+  style.
+    .dataTables_filter,
+    .dataTables_info {
+      display: none;
+    }
+    .dataTables_length, .dataTables_paginate.paging_simple_numbers {
+      width: 50%;
+      float: left;
+    }
+
+  block script
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+
+  script.
+    $(document).ready(function () {
+      //- $.fn.DataTable.moment('LL');
+      var startDateRange;
+      var endDateRange;
+      var total_records = 0;
+      var tbl = $('#all-timesheet').DataTable({
+        ordering: false,
+        pageLength: 100,
+        dom: 'lpftrip',
+        bProcessing: true,
+        bServerSide: true,
+        pagination: true,
+        sAjaxSource: "/admin/timesheet/jq/record",
+        "rowCallback": function(row, data, index) {
+          //- console.log(data);
+        },
+        "drawCallback": function( settings, start, end, max, total, pre ) {
+            total_records = this.fnSettings().fnRecordsTotal();
+            console.log(total_records);
+        },
+        order: [[ 3, "desc" ]],
+        columns: [
+          {
+            data: 'project_name',
+            bSortable: false,
+            render: function (data, type, row) {
+              return `${data ? data : 'Not Provided'}`
+            }
+          },
+          {
+            data: 'employee_name',
+            bSortable: false,
+            render: function (data, type, row) {
+              return `${data ? data : 'Not Provided'}`
+            }
+          },
+          {
+            data: 'worked_date_obj.ll',
+            bSortable: false,
+            render: function (data, type, row) {
+              return `${data ? data : 'Not Provided'}`
+            }
+          },
+          {
+            data: 'worked_hour',
+            bSortable: false,
+            render: function (data, type, row) {
+              return `${data ? `${data.$numberDecimal} hour(s)` : ''}`;
+            }
+          },
+          {
+            data: 'notes',
+            bSortable: false,
+            render: function (data, type, row) {
+              return `${data ? data : 'Not Provided'}`
+            }
+          },
+          {
+            data: 'createdAt',
+            bSortable: false,
+            render: function (data, type, row) {
+              return `${data ? moment(data).format("MMM Do YYYY, h:mm a") : 'Not Provided'}`
+            }
+          },
+          {
+            data: '_id',
+            bSortable: false,
+            render: function (data, type, row) {
+              return `<button type="button" class="btn btn-link btn-primary" data-toggle="tooltip" title="Remove timesheet" data-original-title="Remove timesheet" onclick="deleteTimesheet('${data}')"><i class="fa fa-trash"></i></button>`
+            }
+          }
+        ],
+        fnServerParams: function ( data ) {
+          //- data.push({ "name": "more_data", "value": "my_value" })
+        },
+        footerCallback: function (tfoot, data, start, end, display) {
+          //- console.log(api.column(3));
+          //- console.log(data);
+          var api = this.api();
+          var totalHour = 0;
+          data.forEach(element => {
+            //- console.log(element.worked_hour.$numberDecimal);
+            totalHour += parseFloat(element.worked_hour.$numberDecimal);
+          });
+          var round = Math.round;
+          roundDigit = function (value, decimals) {
+            decimals = decimals || 0;
+            return Number(round(value + 'e' + decimals) + 'e-' + decimals);
+          };
+          //- console.log(roundDigit(totalHour, 2));
+          $(api.column(3).footer()).html(`
+            <button class="btn btn-primary cop" type="button">${roundDigit(totalHour, 2)} Hour(s)</button>
+          `);
+          $('.header_tot').html(`
+            <button class="btn btn-primary cop" type="button">${roundDigit(totalHour, 2)} Hour(s)</button>
+          `);
+        }
+      });
+
+      $('#dropdown1').on('change', function () {
+        tbl
+          .columns(0)
+          .search(this.value)
+          .draw();
+      });
+
+      $('#dropdown2').on('change', function () {
+        tbl
+          .columns(1)
+          .search(this.value)
+          .draw();
+      });
+
+      $('#clear_filter').click(function () {
+        tbl
+          .search('')
+          .columns().search('')
+          .draw();
+
+        $('#dropdown1').val('').change();
+        $('#dropdown2').val('').change();
+        $('#fromTo span').html("");
+        //- tbl.ajax.reload();
+      })
+
+      $('#fromTo').on('cancel.daterangepicker', function(ev, picker) {
+        console.log(tbl);
+        //do something, like clearing an input
+        $('#fromTo span').html("");
+        //- tbl.draw();
+        startDateRange = "";
+        endDateRange = "";
+        tbl
+            .columns(4) // for start date
+            .search('') // for start date
+            .columns(5) // for end date
+            .search('') // for end date
+            .draw();
+      });
+
+      $('#dropdown1').select2({
+        type: 'bootstrap'
+      });
+
+      $('#dropdown2').select2({
+        type: 'bootstrap'
+      });
+
+      var start = moment();
+      var end = moment();
+
+      $('#fromTo').daterangepicker({
+        startDate: start,
+        endDate: end,
+        autoUpdateInput: false,
+        locale: {
+          cancelLabel: 'Clear'
+        }
+      });
+
+      $('#fromTo').on('apply.daterangepicker', function(ev, picker) {
+          $('#fromTo span').html(picker.startDate.format('MMMM D, YYYY') + ' - ' + picker.endDate.format('MMMM D, YYYY'));
+          startDateRange = picker.startDate.format('MM/DD/YYYY');
+          endDateRange = picker.endDate.format('MM/DD/YYYY');
+          tbl
+            .columns(4) // for start date
+            .search(picker.startDate.format('MM/DD/YYYY')) // for start date
+            .columns(5) // for end date
+            .search(picker.endDate.format('MM/DD/YYYY')) // for end date
+            .draw();
+      });
+
+      //- $('#clear_filter').click(function() {
+      //-   window.location.reload();
+      //-   return;
+      //- })
+
+      $('#searchbox').keyup(function(){
+        tbl.search($(this).val()).draw();
+      });
+
+      $("#ExportReporttoExcel").on("click", function() {
+        if(total_records > 0) {
+          var search_key = $("#searchbox").val();
+          var project = $("#dropdown1").val();
+          var employee = $("#dropdown2").val();
+          var stardate = '';
+          var enddate = '';
+          if(startDateRange){
+            stardate = startDateRange;
+            enddate = endDateRange;
+          }
+          //- console.log("startDateRange---", startDateRange);
+          //- console.log("endDateRange---", endDateRange);
+          //- console.log("seatch---", search_key);
+          //- console.log("dropdown1---", $("#dropdown1").val());
+          //- console.log("dropdown2---", $("#dropdown2").val());
+
+          let exportApi = `/admin/timesheet/export?search_key=${search_key}&stardate=${stardate}&enddate=${enddate}&project=${project}&employee=${employee}`;
+
+          window.open(exportApi);
+          return false;
+        } else {
+          alert("No data found!");
+          return;
+        }
+      });
+    })
+
+    function deleteTimesheet(id) {
+      //- alert(id.toString());
+
+      var SweetAlert2Demo = function () {
+        var initDemos = function () {
+          swal({
+            title: 'Are you sure you want to remove?',
+            //- text: 'Do you want for Client or Internal?',
+            type: 'warning',
+            buttons:{
+              cancel: {
+                visible: true,
+                text : 'No',
+                className: 'btn mr-2 btn-black'
+              },
+              confirm: {
+                text : 'Yes',
+                className : 'btn btn-primary'
+              }
+            }
+          }).then((response) => {
+            if (response) {
+              // internal
+              var SweetAlert2Demo = function () {
+
+                //== Demos
+                var initDemos = function () {
+                  swal("Please wait...", {
+                    buttons: false,
+                    timer: 12000,
+                    backdrop:true,
+                    closeOnClickOutside: false,
+                    closeOnEsc: false
+                  })
+                };
+
+                return {
+                    //== Init
+                    init: function () {
+                      initDemos();
+                    },
+                  };
+                }();
+
+              jQuery(document).ready(function () {
+                SweetAlert2Demo.init();
+              });
+
+              $.ajax({
+                type: 'POST',
+                url: '/admin/timesheet/delete/record',
+                data: {
+                  timesheet_id: id.toString(),
+                },
+                success: function(result) {
+                  // console.log(result);
+                  // return;
+                  if (result.type == 'success') {
+                    swal.close();
+                    $.notify({
+                      message: result.message
+                    },{
+                      type: 'success',
+                      showProgressbar: false
+                    },
+                    {
+                      offset: 20,
+                      spacing: 10,
+                      z_index: 1031,
+                      delay: 5000,
+                      timer: 1000
+                    });
+
+                    setTimeout(function () {
+                      window.location.reload();
+                    }, 1000)
+                    return;
+                  } else {
+                    swal.close();
+                    $.notify({
+                      message: 'Something went wrong!'
+                    },{
+                      type: 'danger',
+                      showProgressbar: false
+                    },
+                    {
+                      offset: 20,
+                      spacing: 10,
+                      z_index: 1031,
+                      delay: 5000,
+                      timer: 1000
+                    });
+                    setTimeout(function () {
+                      window.location.reload();
+                    }, 1000)
+                    return;
+                  }
+                }
+              })
+            }
+          });
+        };
+        return {
+          //== Init
+          init: function () {
+            initDemos();
+          },
+        };
+      }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+    }
+
+    function swall(text) {
+      var SweetAlert2Demo = function () {
+        //== Demos
+        var initDemos = function () {
+          swal(text, {
+            buttons: false,
+            timer: 2000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+    }

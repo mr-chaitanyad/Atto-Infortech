@@ -1,0 +1,57 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View All Employees
+              h5.text-white.op-7.mb-2 Welcome to Admin Panel
+            .ml-md-auto.py-2.py-md-0
+              if session.user.type == 'super admin'
+                a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/employee/add') Add Employee
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/dashboard') Dashboard
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                //- pre= h.dump(session.productIDs)
+                .table-responsive
+                  .col-sm-12
+                    table#multi-filter-select.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Name
+                          th Email
+                          th Mobile
+                          th Type
+                          th Created Date
+                          th Status
+                          th Action
+                      tbody
+                        each user in employees
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{user.name}
+                              td #{user.email}
+                              td #{user.mobile}
+                              td #{user.type == "admin" ? "Admin" : user.type == "super admin" ? "Super Admin" : null}
+                              td #{user.createdAt.toString().split(" ").slice(0, 4).join(" ")}
+                              td #{user.status == 'active' ? 'Active' : 'Inactive'}
+                              td
+                                if session.user.type == 'super admin'
+                                  a.btn.btn-link.btn-primary(href=`/admin/employee/edit/${user._id}`)
+                                    i.fa.fa-edit
+                                else
+                                  a.btn.btn-link.btn-primary(href='javascript:void(0)')
+                                    i.fa.fa-eye-slash
+                .row
+  script.
+    $(document).ready(function() {
+      $('#multi-filter-select').DataTable({
+        ordering: false
+      });
+    });

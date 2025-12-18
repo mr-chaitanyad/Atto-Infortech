@@ -1,0 +1,312 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .page-inner
+        .panel-header
+          h4.page-title Tracker
+          ul.breadcrumbs
+            li.nav-home
+              a(href='javascript:void(0);')
+                i.flaticon-home
+            li.separator
+              i.flaticon-right-arrow
+            li.nav-item
+              a(href='javascript:void(0);') Tracker
+            li.separator
+              i.flaticon-right-arrow
+            li.nav-item
+              #reportrange(style='background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%')
+                i.fa.fa-calendar
+                span(style="padding: 0 7px;")
+                i.fa.fa-caret-down
+      .page-inner(style="padding-top: 0px;")
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                .table-responsive
+                  .col-sm-12
+                    if todayTrack != null
+                      //- pre= h.dump(todayTrack)
+                      table#tracker-employee.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                        thead
+                          tr(role='row')
+                            th Employee Name
+                            th Date
+                            th Punch In At
+                            th Punch Out At
+                            th Worked
+                        tbody
+                          each track in todayTrack
+                            a(href="#")
+                              tr.odd(role='row')
+                                td.sorting_1 #{track.employee_id.name}
+                                td #{track.date_time_obj.ll}
+                                td #{track.date_time_obj.lt}
+                                td #{track.date_time_obj_out.lt}
+                                td #{track.time_diff.diff}
+                    else
+                      h4 No data available
+
+  block script
+    //- script(type='text/javascript' src='https://cdn.jsdelivr.net/jquery/latest/jquery.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+    script(type='text/javascript' src='/admin/assets/js/frontHandler.js')
+    script(type='text/javascript' src='/admin/assets/js/tracker-employee.js')
+
+  script.
+    var punchIn = !{JSON.stringify(punchIn)};
+    var punchOut = !{JSON.stringify(punchOut)};
+    var showTimer = !{JSON.stringify(showTimer)};
+    var tracker = !{JSON.stringify(tracker)};
+
+    $(function() {
+        var tbl = $('#tracker-employee').DataTable({
+          ordering: false,
+        });
+        var start = moment();
+        var end = moment();
+        function cb(start, end) {
+            $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        }
+        $('#reportrange').daterangepicker({
+            startDate: moment(),
+            endDate: moment(),
+            maxDate: moment().format("l"),
+            ranges: {
+              'Today': [moment(), moment()],
+              'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+              'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+              'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+              'This Month': [moment().startOf('month'), moment().endOf('month')],
+              'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            }
+        }, function(start, end, label) {
+            cb(start, end);
+            let startDate = {
+              year: parseInt(start.format('YYYY')),
+              month: parseInt(start.format('MM')),
+              date: parseInt(start.format('DD'))
+            };
+            let endDate = {
+              year: parseInt(end.format('YYYY')),
+              month: parseInt(end.format('MM')),
+              date: parseInt(end.format('DD'))
+            };
+            swall("Please wait...");
+            $.ajax({
+              type: 'POST',
+              url: `/admin/tracker/filter/date`,
+              dataType: "json",
+              data: {
+                start: startDate,
+                end: endDate
+              },
+              success: function(result) {
+                console.log(result);
+                if (result.code == 200) {
+                  swal.close();
+                  tbl.clear().rows.add(result.data.newArr).draw();
+                  return;
+                } else if (result.code == 309) {
+                  swal.close();
+                  swall("Something went wrong. Try again later!");
+                } else if (result.code == 401) {
+                  swal.close();
+                  swall("Something went wrong. Try again later!");
+                } else if (result.code == 310) {
+                  swal.close();
+                  swall("You cannot punch in now. Try again tomorrow");
+                } else {
+                  swal.close();
+                  notifyy("Something went wrong! Try again later.", "danger");
+                }
+              }
+            })
+          })
+        cb(start, end);
+    });
+
+    if (showTimer === 1) {
+      startTimer(new Date(tracker.date_time_obj.plain_format));
+    }
+
+    document.getElementById("punch_in").disabled = punchIn == 0 ? false : true;
+    document.getElementById("punch_out").disabled = punchIn == 0 ? true : false;
+
+    var timer = '';
+    var start = new Date();
+
+    $(document).on("click", "#punch_in", function () {
+      const userId = $(this).attr('data-userId');
+      const punchInData = $(this).attr('data-punchIn');
+      const punchInIP = $(this).attr('data-punchInIp');
+
+      $.ajax({
+        type: 'POST',
+        url: `/admin/tracker/punchin/${userId}`,
+        data: {
+          punchInData,
+          punchInIP
+        },
+        success: function(result) {
+          swall("Please wait...");
+          if (result.code == 200) {
+            setTimeout(function () {
+              swal.close();
+              startTimer(new Date(result.data.date_time_obj.plain_format));
+              document.getElementById("punch_in").disabled = true;
+              document.getElementById("punch_out").disabled = false;
+              notifyy("Timer started", "success");
+            }, 1000)
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            notifyy("You are already punched in.", "danger");
+          } else if (result.code == 401) {
+            swall("Something went wrong. Try again later!");
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+          }
+        }
+      })
+    })
+
+    function startTimer(start) {
+      timer = setInterval(function() {
+        var end = new Date();
+        var hrs = end.getHours() - start.getHours();
+        var min = end.getMinutes() - start.getMinutes();
+        var sec = end.getSeconds() - start.getSeconds();
+        var hourCarry = 0;
+        var Timer = $(".timer-count");
+
+        var minutesCarry = 0;
+        if (min < 0) {
+          min += 60;
+          hourCarry += 1;
+        }
+        hrs = hrs - hourCarry;
+        if (sec < 0) {
+          sec += 60;
+          minutesCarry += 1;
+        }
+        min = min - minutesCarry;
+        Timer.text(minTwoDigits(hrs) + ':' + minTwoDigits(min) + ':' + minTwoDigits(sec));
+        $('title').text(`${minTwoDigits(hrs)}:${ minTwoDigits(min)}:${minTwoDigits(sec)} - Atto Infotech`);
+      }, 1000);
+    }
+
+    function minTwoDigits(n) {
+        return (n < 10 ? '0' : '') + n;
+    }
+
+    function swall(text) {
+      var SweetAlert2Demo = function () {
+        //== Demos
+        var initDemos = function () {
+          swal(text, {
+            buttons: false,
+            timer: 2000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+    }
+
+    function notifyy(text, type) {
+      $.notify({
+        message: text
+      },{
+        type: type,
+        showProgressbar: false
+      },
+      {
+        offset: 20,
+        spacing: 10,
+        z_index: 1031,
+        delay: 5000,
+        timer: 1000
+      });
+    }
+
+    $(document).on("click", "#punch_out", function () {
+      const userId = $(this).attr('data-userId');
+      const punchOutData = $(this).attr('data-punchOut');
+      const punchOutIp = $(this).attr('data-punchOutIp');
+
+      // show popup
+      $.fancybox.open(`
+        <form style="display: inline-block; width: 100%; max-width: 660px;" class="fancybox-content">
+          <h2 class="mb-3">Please mention today's task below:</h2>
+          <p style="display: none">
+            <input type='hidden' name="mention_task" class="form-control"></input>
+          </p>
+          <p>
+            <textarea id="mention_task" name="mention_task" style="width:100%;height:200px;max-width:100%;max-height:200px"></textarea>
+          </p>
+          <p id="demo" style="color: #FF0000"></p>
+          <p class="mb-0">
+            <button class="btn btn-primary btn-block password_btn" id="submit-btn" onclick="submitPunchOut('${userId}', '${punchOutData}', '${punchOutIp}');" type="button">Submit</button>
+          </p>
+        </form>
+      `);
+    })
+
+    function stopTimer() {
+      clearInterval(timer);
+    }
+
+    function submitPunchOut(userId, punchOutData, punchOutIp) {
+      $.ajax({
+        type: 'POST',
+        url: `/admin/tracker/punchout/${userId}`,
+        data: {
+          punchOutData,
+          punchOutIp,
+          desc: $("#mention_task").val()
+        },
+        success: function(result) {
+          console.log(result);
+          $.fancybox.close();
+          swall("Please wait...");
+          if (result.code == 200) {
+            //- alert(result.timeDiff);
+            setTimeout(function () {
+              swal.close();
+              stopTimer();
+              document.getElementById("punch_in").disabled = false;
+              document.getElementById("punch_out").disabled = true;
+              $(document).find(".timer-count").html(minTwoDigits(0) + ':' + minTwoDigits(0) + ':' + minTwoDigits(0));
+              $('title').html("Tracker | Atto Infotech");
+              notifyy(`Timer ended. <strong>You worked -> ${result.timeDiff}</strong>`, "success");
+              window.location.reload();
+            }, 1000)
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            notifyy("You are already punched in.", "danger");
+          } else if (result.code == 401) {
+            swall("Something went wrong. Try again later!");
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+          }
+        }
+      })
+    }

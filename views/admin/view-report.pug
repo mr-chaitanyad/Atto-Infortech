@@ -1,0 +1,538 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-center.justify-content-between.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Reports
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+            .ml-md-auto.py-2.py-md-0
+              a#ExportReporttoExcel.btn.btn-white.btn-border.btn-round.mr-2(href='javascript:void(0)',style="height: 45px;margin-top: 0px;") Export to Excel
+              a.btn.btn-white.btn-border.btn-round.mr-2#clear_filter(href='javascript:void(0);') Clear Filter
+      .page-inner
+        .row
+          .col-md-1
+          .col-md-12
+            //- pre= h.dump(reports)
+            .card.card-with-nav
+              .card-body
+                .row
+                  .col-md-3
+                    .form-group
+                      label(for='from') From - To
+                      //- input#fromTo(type='text' name='from')
+                      #fromTo(style='background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%')
+                        i.fa.fa-calendar
+                        span(style="padding: 0 7px;")
+                        i.fa.fa-caret-down
+                      a#clr_fromTo(href="javascript:void(0)") Clear filter
+                  .col-md-3
+                    .form-group
+                      label(for='employees') Select Employees
+                      select#sel_emp.form-control.select2(name='sel_emp')
+                        option(value='') Select Employees
+                        each employee in employees
+                          option(value=employee._id) #{employee.name}
+                      a#clr_emp(href="javascript:void(0)") Clear filter
+                  .col-md-3
+                    .form-group
+                      label(for='employees') Select Projects
+                      select#sel_proj.form-control.select2(name='sel_emp')
+                        option(value='') Select Projects
+                        each project in projects
+                          option(value=project._id) #{project.name}
+                      a#clr_proj(href="javascript:void(0)") Clear filter
+                  //- .col-md-2
+                  //-   label(for='employees') &nbsp;
+                  //-   button.btn.btn-primary#clear_filter(type="button" style='margin-top:36px;')
+                  //-     | Clear Filter
+                hr
+                .table-responsive
+                  .col-sm-12
+                    table#all-reports.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Employee Name
+                          th Total worked hour
+                          th Action
+                      tbody
+                        each report in reports
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{report.employee ? report.employee.name : "Not Provided"}
+                              td #{report.total_hour} hour(s)
+                              td
+                                if report.total_hour
+                                  a(href="javascript:void(0);" onclick=`viewDetails('${report._id}', '${report.employee ? report.employee.name : ""}')`) View details
+                                else
+                                  | No View
+                .row
+  block script
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+
+  script.
+    var tbl;
+    var filterUrl;
+    var fromTo = "";
+    var selEmp = "";
+    var selProj = "";
+    var dateArr = [];
+    $(document).ready(function () {
+      tbl = $('#all-reports').DataTable({
+        ordering: false,
+        pageLength: 100
+      });
+
+      $('#sel_emp').select2({
+        type: 'bootstrap'
+      });
+
+      $('#sel_proj').select2({
+        type: 'bootstrap'
+      });
+
+      $("#clr_proj").css('visibility', 'hidden');
+      $("#clr_emp").css('visibility', 'hidden');
+      $("#clr_fromTo").css('visibility', 'hidden');
+
+      $('#clear_filter').click(function () {
+        window.location.reload();
+        return;
+      })
+
+      var start = moment();
+      var end = moment();
+
+      function cb(start, end) {
+        $('#fromTo span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        let startDate = {
+          year: parseInt(start.format('YYYY')),
+          month: parseInt(start.format('MM')),
+          date: parseInt(start.format('DD'))
+        };
+        let endDate = {
+          year: parseInt(end.format('YYYY')),
+          month: parseInt(end.format('MM')),
+          date: parseInt(end.format('DD'))
+        };
+        $("#clr_fromTo").css('visibility', 'visible');
+        dateArr = {startDate: startDate, endDate: endDate};
+        fromTo = dateArr;
+        filterUrl = `/admin/report/filter?fromTo=${JSON.stringify(dateArr)}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      }
+
+      $('#fromTo').daterangepicker({
+        startDate: start,
+        endDate: end,
+        autoUpdateInput: false,
+        locale: {
+          cancelLabel: 'Clear'
+        }
+      }, cb);
+
+      $('#clr_proj').click(function (e) {
+        //- $('#sel_proj').prop('selectedIndex', 0);
+        $("#sel_proj").val('').trigger('change')
+        $("#clr_proj").css('visibility', 'hidden');
+        selProj = "";
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#clr_emp').click(function (e) {
+        //- $('#sel_emp').prop('selectedIndex', 0);
+        $("#sel_emp").val('').trigger('change')
+        $("#clr_emp").css('visibility', 'hidden');
+        selEmp = "";
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#clr_fromTo').click(function (e) {
+        $('#fromTo span').html("");
+        $("#clr_fromTo").css('visibility', 'hidden');
+        fromTo = "";
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#sel_emp').change(function() {
+        selEmp = $('#sel_emp').val();
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        $("#clr_emp").css('visibility', 'visible');
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+
+      $('#sel_proj').change(function() {
+        selProj = $('#sel_proj').val();
+        filterUrl = `/admin/report/filter?fromTo=${fromTo ? JSON.stringify(fromTo) : ""}&selEmp=${selEmp}&selProj=${selProj}`;
+        $("#clr_proj").css('visibility', 'visible');
+        console.log(filterUrl);
+        ajaxRequest(filterUrl);
+      })
+    });
+
+    //- $("#ExportReporttoExcel").on("click", function () {
+    //-   let exportUrl = `/admin/report/export/excel`;
+
+    //-   console.log("Export URL:", exportUrl);
+
+    //-   window.open(exportUrl);
+    //-   return false;
+    //- });
+
+    $("#ExportReporttoExcel").on("click", function () {
+
+      let exportUrl = `/admin/report/export/excel?`;
+
+      let params = [];
+
+      if (fromTo && Object.keys(fromTo).length) {
+        params.push(`fromTo=${encodeURIComponent(JSON.stringify(fromTo))}`);
+      }
+
+      if (selEmp) {
+        params.push(`selEmp=${selEmp}`);
+      }
+
+      if (selProj) {
+        params.push(`selProj=${selProj}`);
+      }
+
+      exportUrl += params.join("&");
+
+      //- console.log("Export URL:", exportUrl);
+
+      window.open(exportUrl, "_blank");
+      return false;
+    });
+
+
+    function ajaxRequest(url) {
+      swall('Please wait...');
+      console.log('ajax request workng');
+      $.ajax({
+        type: 'POST',
+        url: url,
+        dataType: "json",
+        data: {
+        },
+        success: function(result) {
+          swal.close();
+          console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            tbl.clear().rows.add(result.data.newArr).draw();
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swall("Something went wrong. Try again later!");
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+          }
+        }
+      })
+    }
+
+    function viewDetails(emp_id, employee_name) {
+      swall("Please wait...");
+      $.ajax({
+        type: 'POST',
+        url: `/admin/report/view/details/employees`,
+        dataType: "json",
+        data: {
+          employee_id: emp_id
+        },
+        success: function(result) {
+          //- console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            //- tbl.clear().rows.add(result.data.newArr).draw();
+            $.fancybox.open(`
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-head-row">
+                    <div class="card-title">${employee_name}</div>
+                  </div>
+                  <div class="">
+                    <span class="badge badge-primary badge-pill">View all details</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                ${(result.data).map(each => `
+                  <div class="d-flex">
+                    <div class="flex-1 ml-3 pt-1">
+                      <h6 class="text-uppercase fw-bold mb-1">
+                        ${each.proj.name}
+                      </h6>
+                    </div>
+                    <div class="float-right pt-1" style="margin-left:90px;">
+                      <a href='javascript:void(0)'><span class="badge badge-primary badge-pill" style="font-size:12px;">${each.total_hour.$numberDecimal} hour(s)</span></a>
+                    </div>
+                  </div>
+                  <div class="separator-dashed"></div>
+                `).join("")}
+              </div>
+              </div>
+            `);
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+            swal.close();
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+            swal.close();
+          }
+        }
+      })
+    }
+
+    function viewDetailsAccordingToDate(emp_id, employee_name, startYear, startMonth, startDate, endYear, endMonth, endDate) {
+      $.ajax({
+        type: 'POST',
+        url: `/admin/report/view/details/employees/by/date`,
+        dataType: "json",
+        data: {
+          employee_id: emp_id,
+          start: { year: startYear, month: startMonth, date: startDate},
+          end: { year: endYear, month: endMonth, date: endDate}
+        },
+        success: function(result) {
+          //- console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            //- tbl.clear().rows.add(result.data.newArr).draw();
+            $.fancybox.open(`
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-head-row">
+                    <div class="card-title">${employee_name}</div>
+                  </div>
+                  <div class="">
+                    <span class="badge badge-primary badge-pill">View all details</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                ${(result.data).map(each => `
+                  <div class="d-flex">
+                    <div class="flex-1 ml-3 pt-1">
+                      <h6 class="text-uppercase fw-bold mb-1">
+                        ${each.proj.name}
+                      </h6>
+                    </div>
+                    <div class="float-right pt-1" style="margin-left:90px;">
+                      <a href='javascript:void(0)'><span class="badge badge-primary badge-pill" style="font-size:12px;">${each.total_hour.$numberDecimal} hour(s)</span></a>
+                    </div>
+                  </div>
+                  <div class="separator-dashed"></div>
+                `).join("")}
+              </div>
+              </div>
+            `);
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+            swal.close();
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+            swal.close();
+          }
+        }
+      })
+    }
+
+    function viewNotesAccordingToDateEmpProj(startDateYear, startDateMonth, startDateDate, endDateYear, endDateMonth, endDateDate, emp_id, proj_id, emp_name) {
+      swall("Please wait...");
+      $.ajax({
+        type: 'POST',
+        url: `/admin/report/view/employee/notes?fromStartYear=${startDateYear}&fromStartMonth=${startDateMonth}&fromStartDate=${startDateDate}&toEndYear=${endDateYear}&toEndMonth=${endDateMonth}&toEndDate=${endDateDate}&emp_id=${emp_id}&proj_id=${proj_id}&emp_name=${emp_name}`,
+        dataType: "json",
+        data: {
+        },
+        success: function(result) {
+          //- console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            //- tbl.clear().rows.add(result.data.newArr).draw();
+            $.fancybox.open(`
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-head-row">
+                    <div class="card-title">${emp_name}</div>
+                  </div>
+                  <div class="">
+                    <span class="badge badge-primary badge-pill">View all notes</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                ${(result.data).map((each, index) => `
+                  <div class="d-flex">
+                    ${each.notes ? `
+                      <div class="flex-1 ml-3 pt-1" style="background-color: #58ff84;">
+                        <h6 id="id_${index}" class="fw-bold mb-1">
+                          ${each.notes}
+                        </h6>
+                      </div>
+                      <button class="btn btn-primary btn-xs cop" id="btn_id_${index}" onclick="copyElementText('id_${index}', 'btn_id_${index}')" type="button" style="margin-left:22px;">Copy</button>
+                    ` : `
+                      <div class="flex-1 ml-3 pt-1" style="background-color: #fb5e5e;">
+                        <h6 class="text-uppercase fw-bold mb-1">
+                          Not Provided
+                        </h6>
+                      </div>
+                    `}
+                    <div class="float-right pt-1" style="margin-left:90px;">
+                      <a href='javascript:void(0)'><span class="badge badge-primary badge-pill" style="font-size:12px;">${each.worked_hour.$numberDecimal} hour(s) - ${each.worked_date_obj.ll}</span></a>
+                    </div>
+                  </div>
+                  <div class="separator-dashed"></div>
+                `).join("")}
+              </div>
+              </div>
+            `);
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+            swal.close();
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+            swal.close();
+          }
+        }
+      })
+    }
+
+    function viewNotes(emp_id, proj_id, emp_name) {
+      swall("Please wait...");
+      $.ajax({
+        type: 'POST',
+        url: `/admin/report/view/employee/notes`,
+        dataType: "json",
+        data: {
+          employee_id: emp_id,
+          project_id: proj_id
+        },
+        success: function(result) {
+          //- console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            //- tbl.clear().rows.add(result.data.newArr).draw();
+            $.fancybox.open(`
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-head-row">
+                    <div class="card-title">${emp_name}</div>
+                  </div>
+                  <div class="">
+                    <span class="badge badge-primary badge-pill">View all notes</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                ${(result.data).map((each, index) => `
+                  <div class="d-flex">
+                    ${each.notes ? `
+                      <div class="flex-1 ml-3 pt-1" style="background-color: #58ff84;">
+                        <h6 id="id_${index}" class="fw-bold mb-1">
+                          ${each.notes}
+                        </h6>
+                      </div>
+                      <button class="btn btn-primary btn-xs cop" id="btn_id_${index}" onclick="copyElementText('id_${index}', 'btn_id_${index}')" type="button" style="margin-left:22px;">Copy</button>
+                    ` : `
+                      <div class="flex-1 ml-3 pt-1" style="background-color: #fb5e5e;">
+                        <h6 class="text-uppercase fw-bold mb-1">
+                          Not Provided
+                        </h6>
+                      </div>
+                    `}
+                    <div class="float-right pt-1" style="margin-left:90px;">
+                      <a href='javascript:void(0)'><span class="badge badge-primary badge-pill" style="font-size:12px;">${each.worked_hour.$numberDecimal} hour(s) - ${each.worked_date_obj.ll}</span></a>
+                    </div>
+                  </div>
+                  <div class="separator-dashed"></div>
+                `).join("")}
+              </div>
+              </div>
+            `);
+            return;
+          } else if (result.code == 309) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+          } else if (result.code == 401) {
+            swal.close();
+            swall("Something went wrong. Try again later!");
+            swal.close();
+          } else {
+            swal.close();
+            notifyy("Something went wrong! Try again later.", "danger");
+            swal.close();
+          }
+        }
+      })
+    }
+
+    function copyElementText(id, btn_id) {
+      var that = $(`#${btn_id}`);
+      var text = document.getElementById(id).innerText;
+      var elem = document.createElement("textarea");
+      document.body.appendChild(elem);
+      elem.value = text;
+      elem.select();
+      document.execCommand("copy");
+      document.body.removeChild(elem);
+      that.text('Copied!');
+      setTimeout(function () {
+        that.text('Copy');
+      }, 1500)
+    }
+
+    function swall(text) {
+      var SweetAlert2Demo = function () {
+        //== Demos
+        var initDemos = function () {
+          swal(text, {
+            buttons: false,
+            timer: 2000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+        return {
+          //== Init
+          init: function () {
+            initDemos();
+          },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+    }

@@ -1,0 +1,51 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Dashboard
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech Timesheet Panel
+            //- .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2.zero_qty_spares(href='javascript:void(0)') Download zero qty spares (Bhiwandi)
+              a.btn.btn-secondary.btn-round(href='/admin/stock/view/cart') View Cart
+      .page-inner.mt--5
+        .row
+          .col-md-12
+            .card
+              //- .card-header
+                //- h4.card-title Search here with spare name...
+                  a.btn.btn-primary.download_pdf_btn.btn-sm(style="color:white;display:none;") Download searched products
+              //- .card-body
+                input.form-control.search.mb-2#product_input(type='search' placeholder="Type here..." autocomplete="off" autofocus)
+                .table-responsive
+                  .col-sm-12
+                    table#dashboard.display.table.row-border.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row' style="display: none;")
+                          th Item Name
+                          th Warehouse
+                          th Qty
+                          th Actions
+                          th Zero
+                      tbody
+                        each stock in stocks
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{stock.product_id.name} (#{stock.product_id.alt_name ? `${stock.product_id.alt_name}` : "Not provided"})
+                              td #{stock.warehouse_id.name}
+                              td #{parseInt(stock.qty)}
+                              td
+                                if stock.qty !== 0
+                                  a(href='javascript:void(0)', class="shift-right", onclick=`transferTo('${stock._id}', '${stock.product_id.name}', '${stock.product_id._id}', '${stock.warehouse_id.name}', '${stock.warehouse_id._id}', '${stock.qty}')`)
+                                    span.badge.badge-primary.badge-pill Transfer to
+                                  a(href='javascript:void(0)', style='padding-left: 25px;', onclick=`addToCart('${stock._id}', '${stock.product_id.name}', '${stock.warehouse_id.name}', '${stock.qty}', '${stock.product_id._id}', '${stock.warehouse_id._id}', '${stock.product_id.price}')`)
+                                    span.badge.badge-primary.badge-pill Add to cart
+                              td(style="display: none;") #{stock.qty == 0 ? 'zero' : ''}
+
+  block script
+    //-- fancybox
+    script(src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js")

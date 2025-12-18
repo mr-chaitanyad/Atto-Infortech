@@ -1,0 +1,210 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .page-inner
+        .panel-header
+          h4.page-title Tracker
+          ul.breadcrumbs
+            li.nav-home
+              a(href='javascript:void(0);')
+                i.flaticon-home
+            li.separator
+              i.flaticon-right-arrow
+            li.nav-item
+              a(href='javascript:void(0);') Tracker
+            li.separator
+              i.flaticon-right-arrow
+            li.nav-item
+              #reportrange(style='background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%')
+                i.fa.fa-calendar
+                span(style="padding: 0 7px;")
+                i.fa.fa-caret-down
+      .page-inner(style="padding-top: 0px;")
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                .table-responsive
+                  .col-sm-12
+                    table#tracker-admin.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Employee Name
+                          th Date
+                          th Punched In At
+                          th Punched Out At
+                          th Worked
+                          th In device
+                          th Out device
+                      tbody
+                        each track in trackers
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1
+                                | #{track.employee_id.name}
+                              td #{track.date_time_obj.ll}
+                              td
+                                | #{track.date_time_obj.lt} (#{moment(track.date_time_obj.plain_format).fromNow()})
+                                if track.punch_in_ip
+                                  br
+                                  strong
+                                    | #{track.punch_in_ip || ""}
+                              td
+                                if track.date_time_obj_out
+                                  | #{track.type == "auto" ? `${track.date_time_obj_out.lt} (auto)` : track.date_time_obj_out.lt} (#{moment(track.date_time_obj_out.plain_format).fromNow()})
+                                  if track.punch_out_ip
+                                    br
+                                    strong
+                                      | #{track.punch_out_ip || ""}
+                                else
+                                  | "Not yet punched out!"
+                              td #{track.time_diff.diff}
+                              td
+                                if track.deviceInfoIn && Object.keys(track.deviceInfoIn).length
+                                  strong
+                                    | #{track.deviceInfoIn.os}/#{track.deviceInfoIn.platform}/#{track.deviceInfoIn.browser}
+                                else
+                                  | Not Provided
+                              td
+                                if track.deviceInfoOut && Object.keys(track.deviceInfoOut).length
+                                  strong
+                                    | #{track.deviceInfoOut.os}/#{track.deviceInfoOut.platform}/#{track.deviceInfoOut.browser}
+                                else
+                                  | Not Provided
+
+  block script
+    //- script(type='text/javascript' src='https://cdn.jsdelivr.net/jquery/latest/jquery.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+
+  script.
+
+    $(document).ready(function() {
+      //- $('#tracker-admin').DataTable({
+      //-   ordering: false
+      //- });
+    });
+
+    $(function() {
+        var tbl = $('#tracker-admin').DataTable({
+          ordering: false,
+          pageLength: 100
+        });
+        //- var start = moment().subtract(29, 'days');
+        var start = moment();
+        var end = moment();
+        function cb(start, end) {
+            $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        }
+        $('#reportrange').daterangepicker({
+            startDate: moment(),
+            endDate: moment(),
+            maxDate: moment().format("l"),
+            ranges: {
+              'Today': [moment(), moment()],
+              'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+              'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+              'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+              'This Month': [moment().startOf('month'), moment().endOf('month')],
+              'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            }
+        }, function(start, end, label) {
+            cb(start, end);
+            let startDate = {
+              year: parseInt(start.format('YYYY')),
+              month: parseInt(start.format('MM')),
+              date: parseInt(start.format('DD'))
+            };
+            let endDate = {
+              year: parseInt(end.format('YYYY')),
+              month: parseInt(end.format('MM')),
+              date: parseInt(end.format('DD'))
+            };
+            swall("Please wait...");
+            $.ajax({
+              type: 'POST',
+              url: `/admin/tracker/filter/date`,
+              dataType: "json",
+              data: {
+                start: startDate,
+                end: endDate
+              },
+              success: function(result) {
+                console.log(result.data.newArr);
+                if (result.code == 200) {
+                  swal.close();
+                  tbl.clear().rows.add(result.data.newArr).draw();
+                  return;
+                } else if (result.code == 309) {
+                  swal.close();
+                  swall("Something went wrong. Try again later!");
+                } else if (result.code == 401) {
+                  swall("Something went wrong. Try again later!");
+                } else {
+                  swal.close();
+                  notifyy("Something went wrong! Try again later.", "danger");
+                }
+              }
+            })
+
+            //- $('#myTable').DataTable( {
+            //-     ajax: {
+            //-       url: "/admin/tracker/filter/date",
+            //-       type: 'POST'
+            //-       data: {
+            //-         start: startDate,
+            //-         end: endDate
+            //-       }
+            //-     },
+            //-     columns: [
+            //-         { data: 'Date' },
+            //-         { data: 'punchInAt' },
+            //-         { data: 'punchInOut' },
+            //-         { data: 'Worked' },
+            //-     ]
+            //- });
+          })
+        cb(start, end);
+
+        function swall(text) {
+          var SweetAlert2Demo = function () {
+            //== Demos
+            var initDemos = function () {
+              swal(text, {
+                buttons: false,
+                timer: 2000,
+                backdrop:true,
+                closeOnClickOutside: false,
+                closeOnEsc: false
+              })
+            };
+            return {
+                //== Init
+                init: function () {
+                  initDemos();
+                },
+              };
+            }();
+          jQuery(document).ready(function () {
+            SweetAlert2Demo.init();
+          });
+        }
+
+        function notifyy(text, type) {
+          $.notify({
+            message: text
+          },{
+            type: type,
+            showProgressbar: false
+          },
+          {
+            offset: 20,
+            spacing: 10,
+            z_index: 1031,
+            delay: 5000,
+            timer: 1000
+          });
+        }
+    });

@@ -1,0 +1,142 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Add Product
+              h5.text-white.op-7.mb-2 Welcome to Admin Panel
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/product/all') All Products
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/dashboard') Dashboard
+      .page-inner
+        .row
+          .col-md-12
+            .card
+              form(action="/admin/product/add", method="POST")
+                .card-body
+                  .form-group.form-show-validation.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right
+                      | Is it a spare or product?
+                      span.required-label *
+                    .col-lg-4.col-md-9.col-sm-8.d-flex.align-items-center
+                      .custom-control.custom-radio
+                        input#spare.custom-control-input(type='radio' name='is_spare' value="spare")
+                        label.custom-control-label(for='spare') Spare
+                      .custom-control.custom-radio
+                        input#product.custom-control-input(type='radio' name='is_spare' value="product" checked="")
+                        label.custom-control-label(for='product') Product
+                  .form-group.form-show-validation.row.product-sel
+                      label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='prod')
+                        | Product Selection
+                      .col-lg-7.col-md-9.col-sm-8
+                        .select2-input
+                          select#multiple-states.form-control(name='categories', multiple='multiple')
+                            each product in products
+                              option(value=product._id) #{product.name}
+                  .form-group.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='name')
+                      | Name
+                      span.required-label *
+                    .col-lg-7.col-md-9.col-sm-8
+                      input#name.form-control(type='text', name='name', placeholder='Enter Name', required='')
+                  .form-group.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='name')
+                      | Alternate Name
+                      span.required-label
+                    .col-lg-7.col-md-9.col-sm-8
+                      input#name.form-control(type='text', name='alt_name', placeholder='Enter Alternate Name')
+                  .form-group.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='name')
+                      | Price
+                      span.required-label *
+                    .col-lg-7.col-md-9.col-sm-8
+                      input#qty_text.form-control(type='text', name='price', placeholder='Enter Price', onkeyup="checkNumberPrice();" required='', value=1)
+                      p(id="demo" style="color: #FF0000")
+                  .form-group.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='name')
+                      | Description
+                      span.required-label
+                    .col-lg-7.col-md-9.col-sm-8
+                      textarea.form-control(name="desc" rows="4" cols="50")
+                  .form-group.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='name')
+                      | Threshold
+                      span.required-label *
+                    .col-lg-7.col-md-9.col-sm-8
+                      input#threshold_qty.form-control(type='text', name='threshold', placeholder='Enter threshold', onkeyup="checkNumberThreshold();", required='', value=100)
+                      p(id="demo_threshold" style="color: #FF0000")
+                  .form-group.form-show-validation.row
+                      label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='prod')
+                        | Status
+                      .col-lg-7.col-md-9.col-sm-8
+                        .select2-input
+                          select.form-control(name='status', required='')
+                            option(value='active') Active
+                            option(value='inactive') Inactive
+                  .table-responsive(style="padding-top: 60px;")
+                    .col-sm-12
+                      table#addmoreTable.display.table.table-bordered(role='grid', aria-describedby='basic-datatables_info')
+                        thead
+                          tr
+                            th.w-25 Warehouse
+                            th Quantity
+                            th
+                              button.btn.btn-primary.btn-sm.addmore(type="button") Add more
+                        tbody
+                          tr(tr_count = 0)
+                            td
+                              select.form-control.state(name='warehouse[0]', id="state0" style="height: 20px !important" required="")
+                                each warehouse in warehouses
+                                  option(value=warehouse._id) #{warehouse.name}
+                            td
+                              input.form-control.custom-input(type='number' style="height: 30px !important; border-color: rgba(0, 0, 0, 0.48)" name='qty[0]' value=0 required="")
+                            //- td
+                            //-   button.btn.btn-color(type="submit" id="submit-btn") Add Product
+                .card-action
+                  .row
+                    .col-md-12
+                      button.btn.btn-color(type="submit") Add Product
+
+  block script
+    script(src='/admin/custom/add-product.js')
+
+  script.
+    var warehouseObj = !{JSON.stringify(warehouses)};
+
+    function checkNumberPrice() {
+      var x = document.getElementById("qty_text").value;
+
+      // If x is Not a Number or less than one or greater than 10
+      if (isNaN(x)) {
+        console.log(document.getElementById("submit-btn"));
+        text = "Your price is not a number.";
+        document.getElementById("submit-btn").disabled = true;
+      } else if (x.includes('.') || x.includes('-') || x.includes('+')) {
+        text = "This is not a valid number. Please check!";
+        document.getElementById("submit-btn").disabled = true;
+      } else {
+        text = "";
+        document.getElementById("submit-btn").disabled = false;
+      }
+      document.getElementById("demo").innerHTML = text;
+    }
+
+    function checkNumberThreshold () {
+      var y = document.getElementById("threshold_qty").value;
+
+      if (isNaN(y)) {
+        text = "Your threshold is not a number.";
+        document.getElementById("submit-btn").disabled = true;
+      } else if (y.includes('.') || y.includes('-') || y.includes('+')) {
+        text = "This is not a valid number. Please check!";
+        document.getElementById("submit-btn").disabled = true;
+      } else {
+        text = "";
+        document.getElementById("submit-btn").disabled = false;
+      }
+      document.getElementById("demo_threshold").innerHTML = text;
+    }

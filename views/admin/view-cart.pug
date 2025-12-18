@@ -1,0 +1,264 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View Cart
+              h5.text-white.op-7.mb-2 Welcome to Admin Panel
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/dashboard') Dashboard
+      .page-inner
+        .d-flex.justify-content-between
+          .d-md-inline-block
+            //- pre= h.dump(warehouse_cart)
+            //- pre= h.dump(carts)
+          a.btn.btn-primary.d-none.d-sm-inline-block(href='/admin/stock/clear/cart/session', style='color: #fff') Clear cart
+        .row
+          each house, i in warehouse_cart
+            div(class=`col-md-${12/warehouse_cart.length}`)
+              h2 #{house}
+              section.card.mt-4
+                .list-group.list-group-messages.list-group-flush.div
+                  - var prices = []
+                  - var houses = [];
+                  each cart, i in carts
+                    if (cart.warehouse_name == house)
+                      - prices.push(parseInt(cart.qty) * parseInt(cart.price))
+                      .list-group-item.unread
+                        div(class=`list-group-item-body pl-3 pl-md-4 rem-sec-${i}`)
+                          .row
+                            .col-12.col-lg-10
+                              h4.list-group-item-title
+                                a(href='javascript:void(0)') #{cart.product_name} from #{cart.warehouse_name} warehouse (total quantity available: #{cart.total_qty})
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-id-${i}` name='qty', value=cart.id, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-stock_id-${i}` name='qty', value=cart.stock_id, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-product_id-${i}` name='qty', value=cart.product_id, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-product_name-${i}` name='qty', value=cart.product_name, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-warehouse_id-${i}` name='qty', value=cart.warehouse_id, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-warehouse_name-${i}` name='qty', value=cart.warehouse_name, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-total_qty-${i}` name='qty', value=cart.total_qty, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-price-${i}` name='qty', value=cart.price, style='width: 20%')
+                              input.form-control.list-group-item-text.text-truncate.qtytxt(type='number', id=`qty_text-${i}` name='qty', value=cart.qty, style='width: 20%', required="")
+                              p(id=`demo-${i}` style="color: #FF0000")
+                              p(class=`list-group-item-text text-truncate pri-${i}`) Amount: Rs. #{new Intl.NumberFormat('en-IN', { maximumSignificantDigits: 3 }).format(`${parseInt(cart.qty) * parseInt(cart.price)}`)} /-
+                            .col-12.col-lg-2.text-lg-right
+                              a(class=`list-group-item-text rem-${i}` href=`/admin/stock/remove/cart/${cart.id}`) Remove
+          //- .col-md-6
+          //-   section.card.mt-4
+          //-     .list-group.list-group-messages.list-group-flush.div
+          //-       - var prices = []
+          //-       each cart, i in carts
+          //-         - prices.push(parseInt(cart.qty) * parseInt(cart.price))
+          //-         .list-group-item.unread
+          //-           //-.list-group-item-figure
+          //-             span.rating.rating-sm.mr-3
+          //-               input#star1(type='checkbox' value='1')
+          //-               label(for='star1')
+          //-                 span.fa.fa-star
+          //-             a.user-avatar(href='conversations.html')
+          //-               .avatar.avatar-online
+          //-                 img.avatar-img.rounded-circle(src='../assets/img/jm_denis.jpg' alt='...')
+          //-           div(class=`list-group-item-body pl-3 pl-md-4 rem-sec-${i}`)
+          //-             .row
+          //-               .col-12.col-lg-10
+          //-                 h4.list-group-item-title
+          //-                   a(href='javascript:void(0)') #{cart.product_name} from #{cart.warehouse_name} warehouse (total quantity available: #{cart.total_qty})
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-id-${i}` name='qty', value=cart.id, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-stock_id-${i}` name='qty', value=cart.stock_id, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-product_id-${i}` name='qty', value=cart.product_id, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-product_name-${i}` name='qty', value=cart.product_name, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-warehouse_id-${i}` name='qty', value=cart.warehouse_id, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-warehouse_name-${i}` name='qty', value=cart.warehouse_name, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-total_qty-${i}` name='qty', value=cart.total_qty, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='hidden', id=`some-price-${i}` name='qty', value=cart.price, style='width: 20%')
+          //-                 input.form-control.list-group-item-text.text-truncate.qtytxt(type='number', id=`qty_text-${i}` name='qty', value=cart.qty, style='width: 20%', required="")
+          //-                 p(id=`demo-${i}` style="color: #FF0000")
+          //-                 p(class=`list-group-item-text text-truncate pri-${i}`) Amount: Rs. #{new Intl.NumberFormat('en-IN', { maximumSignificantDigits: 3 }).format(`${parseInt(cart.qty) * parseInt(cart.price)}`)} /-
+          //-               .col-12.col-lg-2.text-lg-right
+          //-                 a(class=`list-group-item-text rem-${i}` href=`/admin/stock/remove/cart/${cart.id}`) Remove
+        .d-flex.justify-content-between
+          .d-md-inline-block
+        .select2-input.form-group
+          select#client-id.form-control(name='client_id', required='')
+            option(value='0') --- Select Client ---
+            each client in clients
+              option(value=client._id) #{client.company_name}
+        .d-flex.justify-content-between
+          .d-md-inline-block
+        button.btn.btn-primary.btn-block.d-none.d-sm-inline-block(type="button", id="submit-btn", style='color: #fff') Add to packaging slip
+  script.
+    var cartObj = !{JSON.stringify(carts)};
+
+    cartObj.map((cart, i) => {
+      //- alert(i);
+      $(`#qty_text-${i}`).keyup(function () {
+        //- alert(cart.total_qty);
+        var x = document.getElementById(`qty_text-${i}`).value;
+        //- alert(typeof x);
+        var priceDom = parseInt(x) * cart.price;
+        $(`.pri-${i}`).text(`Amount: Rs. ${new Intl.NumberFormat('en-IN', { maximumSignificantDigits: 3 }).format(priceDom)} /-`)
+        console.log($(`.pri-${i}`).text())
+        //- alert(priceDom);
+
+        // If x is Not a Number or less than one or greater than 10
+        if (isNaN(parseInt(x))) {
+          text = "Your input is not a number.";
+          document.getElementById("submit-btn").disabled = true;
+        } else if (parseInt(x) > cart.total_qty) {
+          text = "Your input is more than the quantity. Please check!";
+          document.getElementById("submit-btn").disabled = true;
+        } else if (x.includes('.') || x.includes('-') || x.includes('+')) {
+          text = "This is not a valid number. Please check!";
+          document.getElementById("submit-btn").disabled = true;
+        } else {
+          text = "";
+          document.getElementById("submit-btn").disabled = false;
+        }
+        document.getElementById(`demo-${i}`).innerHTML = text;
+      })
+
+      //- $(`.rem-${i}`).click(function () {
+      //-   //- alert(i);
+      //-   $(`.rem-sec-${i}`).hide();
+      //- })
+    })
+
+    $(document).ready(function() {
+      var cli_id = $('#client-id').val();
+      $('#submit-btn').click(function () {
+        if ($('#client-id').val() == '0') {
+          $('#client-id').select2('open');
+          $.notify({
+            message: 'Please select client!'
+          },{
+            type: 'danger',
+            showProgressbar: false
+          },
+          {
+            offset: 20,
+            spacing: 10,
+            z_index: 1031,
+            delay: 5000,
+            timer: 1000
+          });
+          return false;
+        }
+        document.getElementById("submit-btn").disabled = true;
+
+        $.fancybox.close();
+
+        var SweetAlert2Demo = function () {
+
+            //== Demos
+            var initDemos = function () {
+              swal("Adding to packaging slip.. Please wait", {
+                buttons: false,
+                timer: 15000,
+                backdrop:true,
+                closeOnClickOutside: false,
+                closeOnEsc: false
+              })
+            };
+
+            return {
+                //== Init
+                init: function () {
+                  initDemos();
+                },
+              };
+            }();
+
+          jQuery(document).ready(function () {
+            SweetAlert2Demo.init();
+          });
+        //- $('.cover-spin').show(0);
+        var pushObj = [];
+        //- alert(cli_id);
+
+        cartObj.map((cart, i) => {
+          var id = $(`#some-id-${i}`).val();
+          var stockID = $(`#some-stock_id-${i}`).val();
+          var productID = $(`#some-product_id-${i}`).val();
+          var warehouseID = $(`#some-warehouse_id-${i}`).val();
+          var warehouseName = $(`#some-warehouse_name-${i}`).val();
+          var totalQty = $(`#some-total_qty-${i}`).val();
+          var price = $(`#some-price-${i}`).val();
+          var inputQty = $(`#qty_text-${i}`).val();
+          var productName = $(`#some-product_name-${i}`).val();
+          var cli_id = $('#client-id').val();
+
+          var obj = {
+            id: id,
+            stock_id: stockID,
+            client_id: $('#client-id').val(),
+            product_id: productID,
+            product_name: productName,
+            warehouse_id: warehouseID,
+            warehouse_name: warehouseName,
+            total_qty: totalQty,
+            price: price,
+            input_qty: inputQty,
+            total_amt: parseInt(price) * parseInt(inputQty)
+          };
+          pushObj.push(obj);
+        });
+        //- alert($('#client-id').val());
+
+        $.ajax({
+          type: 'POST',
+          url: '/admin/stock/add/to/packaging/slip/',
+          data: {
+            mainObj: pushObj,
+            client_id: $('#client-id').val()
+          },
+          success: function(result) {
+            //- console.log(result);
+            swal.close();
+            $.notify({
+              message: 'Packaging slip added!'
+            },{
+              type: 'success',
+              showProgressbar: false
+            },
+            {
+              offset: 20,
+              spacing: 10,
+              z_index: 1031,
+              delay: 5000,
+              timer: 1000
+            });
+
+            setTimeout(function () {
+              window.location.href = '/admin/dashboard';
+            }, 1500)
+          }
+        })
+
+        console.log(pushObj);
+        //- console.log(stockID);
+      })
+    })
+
+    function checkNumber(qty) {
+        var x = document.getElementById("qty_text").value;
+
+        // If x is Not a Number or less than one or greater than 10
+        if (isNaN(x)) {
+          text = "Your input is not a number.";
+          document.getElementById("submit-btn").disabled = true;
+        } else if (parseInt(x) > parseInt(qty)) {
+          text = "Your input is more than the quantity. Please check!";
+          document.getElementById("submit-btn").disabled = true;
+        } else if (x.includes('.') || x.includes('-') || x.includes('+')) {
+          text = "This is not a valid number. Please check!";
+          document.getElementById("submit-btn").disabled = true;
+        } else {
+          text = "";
+          document.getElementById("submit-btn").disabled = false;
+        }
+        document.getElementById("demo").innerHTML = text;
+      }

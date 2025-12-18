@@ -1,0 +1,48 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Update Sub Task
+              h5.text-white.op-7.mb-2 Welcome to Admin Panel
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/project/sub/task/all') All Sub Task
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/dashboard') Dashboard
+      .page-inner
+        .row
+          .col-md-12
+            //- pre= h.dump(subTask)
+            .card
+              form(action=`/admin/project/edit/sub/task/${subTask._id}`, method="POST")
+                .card-body
+                  .form-group.form-show-validation.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='status')
+                      | Select Project
+                      span.required-label *
+                    .col-lg-7.col-md-9.col-sm-8
+                      .select2-input
+                        select#state.form-control(name='project_id', required='')
+                          each project in projects
+                            option(value=project._id selected=(project._id.toString() == subTask.project_id._id.toString())) #{project.name}
+                  .form-group.form-show-validation.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='email')
+                      | Sub Task
+                      span.required-label *
+                    .col-lg-7.col-md-9.col-sm-8
+                      textarea(name="sub_task" placeholder="Enter sub task" style="width: 100%; border: 1px solid rgb(235, 237, 242); margin-top: 3px; border-radius: 5px;") #{subTask.sub_task}
+                  .form-group.form-show-validation.row
+                    label.col-lg-3.col-md-3.col-sm-4.mt-sm-2.text-right(for='status')
+                      | Status
+                    .col-lg-7.col-md-9.col-sm-8
+                      .select2-input
+                        select#state.form-control(name='status', required='')
+                          option(value='active' selected=(subTask.status == 'active' ? 'selected' : null)) Active
+                          option(value='inactive' selected=(subTask.status == 'inactive' ? 'selected' : null)) Inactive
+                .card-action
+                  .row
+                    .col-md-12
+                      button.btn.btn-color.btn-primary(type="submit") Update Sub Task

@@ -1,0 +1,410 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View All Projects
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='javascript:void(0);' onclick=`addNewProject()`) Add Project
+      .page-inner
+        .row
+          .col-md-12
+            //- pre= h.dump(projects)
+            .card.card-with-nav
+              .card-body
+                .table-responsive
+                  .col-sm-12
+                    table#all-projects.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Name
+                          th Hour req.
+                          th Status
+                          th Description
+                          th Assigning
+                          th Action
+                      tbody
+                        each project in projects
+                          a(href="#")
+                            tr.odd(role='row')
+                              td.sorting_1 #{project.name}
+                                button.btn.btn-link.btn-primary(type='button' data-toggle='tooltip' title="Add sub task" data-original-title="Add sub task" onclick=`openAddSubTask('${project._id}')`)
+                                  i.fas.fa-external-link-alt
+                              td #{project.total_req_hour} hour
+                              td #{project.status == 'active' ? 'Active' : "In-Active"}
+                              td
+                                if project.description
+                                  //- button
+                                  button.btn.btn-link.btn-primary(type='button' data-toggle='tooltip' title="Edit employee" data-original-title="Edit employee" onclick=`viewDescription('${project.name}', '${project.description}')`) View
+                                else
+                                  | Not Provided
+                              td
+                                if !assigned.includes(project._id.toString())
+                                  button.btn.btn-primary.btn-xs.assign(type="button", onclick=`assignProject('${project.name}', '${project._id}');`) Assign
+                                else
+                                  button.btn.btn-primary.btn-xs.already_assigned(style="margin-right: 10px;" onclick=`assignedProject('${project.name}', '${project._id}', '${project.assignedEmployees.length ? JSON.stringify(project.assignedEmployees) : []}');`) Already Assigned
+                              td
+                                if session.user.role == 1
+                                  button.btn.btn-link.btn-primary(type='button' data-toggle='tooltip' title="Edit project" data-original-title="Edit project" onclick=`editProject('${project._id}', '${project.name}', '${project.email || ""}', '${project.mobile || ""}', '${project.total_req_hour || ""}', '${project.contactInfo || ""}', '${project.description || ""}', '${project.status}')`)
+                                    i.fa.fa-edit
+                .row
+
+  script.
+    $(document).ready(function() {
+      $('#all-projects').DataTable({
+        ordering: false,
+        pageLength: 100
+      });
+    });
+
+    var allEmployees = !{JSON.stringify(employees)};
+
+    function addNewProject() {
+      $.fancybox.open(`
+        <form action="/admin/project/create" method="POST" style="max-width:41%;">
+          <div class="card-body">
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Name</label>
+                  <input type="text" class="form-control" name="name" placeholder="Name" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Email</label>
+                  <input type="email" class="form-control" name="email" placeholder="email">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Contact Person / Info</label>
+                  <input type="text" class="form-control" name="contactInfo" placeholder="Contact Info">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Mobile</label>
+                  <input type="number" class="form-control" name="mobile" placeholder="Mobile">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Total Complete hour</label>
+                  <input type="number" class="form-control" name="total_req_hour" placeholder="Total hour to complete this project" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                <label>Status</label>
+                <select class="form-control" name="status">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Description</label>
+                  <textarea id="proj_desc" name="description" rows="5" cols="86"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="text-right mt-3 mb-3">
+              <button class="btn btn-secondary btn-round" type="submit">Add New Project</button>
+            </div>
+          </div>
+        </form>
+      `);
+    }
+
+    function viewDescription(name, desc) {
+      $.fancybox.open(`
+        <form style="display: inline-block; width: 100%; max-width: 660px;" class="fancybox-content">
+          <h2 class="mb-3">${name} description -></h2>
+          <p>
+            <h3 class="mb-3">${desc}</h3>
+          </p>
+        </form>
+      `);
+    }
+
+    function assignProject(projectName, projectId) {
+      $.fancybox.open(`
+        <form action="/admin/assign/project" method="POST" style="display: inline-block; width: 100%; max-width: 660px;" class="fancybox-content">
+          <h2 class="mb-3">Assign <strong>${projectName}</strong> to:</h2>
+          <p style="display: none">
+            <input type='hidden' name="employee_id" class="form-control"></input>
+          </p>
+          <p>
+            <div class="col-md-12">
+              <div class="form-group form-group-default">
+                <label>Assign</label>
+                <select id="assign_to" class="form-control" name="assign_to" multiple>
+                  ${allEmployees.map(emp => `<option value="${emp._id}">${emp.name}</option>`)}
+                </select>
+              </div>
+            </div>
+          </p>
+          <p id="demo" style="color: #FF0000"></p>
+          <p class="mb-0">
+            <button class="btn btn-primary btn-block password_btn" id="submit-btn" onclick="assignProjectTo('${projectId}', '${$('#assign_to').val()}');" type="button">Submit</button>
+          </p>
+        </form>
+      `);
+      $('#assign_to').select2({
+        type: 'bootstrap'
+      });
+    }
+
+    function assignProjectTo(proj_id, assign_to_val) {
+      $.fancybox.close();
+      var SweetAlert2Demo = function () {
+        //== Demos
+        var initDemos = function () {
+          swal("Please wait...", {
+            buttons: false,
+            timer: 12000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+      $.ajax({
+        type: 'POST',
+        url: `/admin/project/assign/to`,
+        data: {
+          projectId: proj_id,
+          assignTo:  $('#assign_to').val()
+        },
+        success: function(result) {
+          console.log(result);
+          if (result.code == 200) {
+            // password match
+            swal.close();
+            console.log(result);
+            $.notify({
+              message: `Assigned <strong>${result.data.name}</strong> to employees!`
+            },{
+              type: 'success',
+              showProgressbar: false
+            },
+            {
+              offset: 20,
+              spacing: 10,
+              z_index: 1031,
+              delay: 5000,
+              timer: 1000
+            });
+            setTimeout(function() {
+              window.location.reload();
+            }, 1000)
+          } else {
+            swal.close();
+            $.notify({
+              message: 'Something went wrong! Try again later.'
+            },{
+              type: 'danger',
+              showProgressbar: false
+            },
+            {
+              offset: 20,
+              spacing: 10,
+              z_index: 1031,
+              delay: 5000,
+              timer: 1000
+            });
+          }
+        }
+      })
+    }
+
+    function editProject(proj_id, proj_name, proj_email, proj_mobile, proj_hour, proj_contact, proj_desc, status) {
+      $.fancybox.open(`
+        <form action="/admin/project/edit/${proj_id}" method="POST" style="max-width:41%;">
+          <div class="card-body">
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Name</label>
+                  <input type="text" class="form-control" name="name" value="${proj_name}" placeholder="Name" required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Email</label>
+                  <input type="email" class="form-control" value="${proj_email}" name="email" placeholder="email">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Contact Person / Info</label>
+                  <input type="text" class="form-control" value="${proj_contact}" name="contactInfo" placeholder="Contact Info">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Mobile</label>
+                  <input type="number" class="form-control" value="${proj_mobile}" name="mobile" placeholder="Mobile">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Total Complete hour</label>
+                  <input type="number" class="form-control" value="${proj_hour}" name="total_req_hour" placeholder="Total hour to complete this project">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                <label>Status</label>
+                <select class="form-control" name="status">
+                  <option value="active" ${status == 'active' ? 'selected' : ""}>Active</option>
+                  <option value="inactive" ${status == 'inactive' ? 'selected' : ""}>Inactive</option>
+                </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group form-group-default">
+                  <label>Description</label>
+                 <textarea id="proj_desc" name="description" rows="5" cols="86">${proj_desc}</textarea>
+                </div>
+              </div>
+            </div>
+            <div class="text-right mt-3 mb-3">
+              <button class="btn btn-secondary btn-round" type="submit">Update Project</button>
+            </div>
+          </div>
+        </form>
+      `);
+    }
+
+    function assignedProject(proj_name, proj_id, ass_emp) {
+      var eachEmp = [];
+      if (JSON.parse(ass_emp).length) {
+        var employees = JSON.parse(ass_emp);
+        employees.map(emp => {
+          eachEmp.push(emp._id);
+        })
+      }
+      $.fancybox.open(`
+        <form action="/admin/assigned/project/${proj_id}" method="POST" style="display: inline-block; width: 100%; max-width: 660px;" class="fancybox-content">
+          <h2 class="mb-3">Already Assigned <strong>${proj_name}</strong> to:</h2>
+          <p style="display: none">
+            <input type='hidden' name="employee_id" class="form-control"></input>
+          </p>
+          <p>
+            <div class="col-md-12">
+              <div class="form-group form-group-default">
+                <label>Assign</label>
+                <select id="assigned_to" class="form-control" name="assigned_to" multiple>
+                  ${allEmployees.map(emp => `<option value="${emp._id}">${emp.name}</option>`)}
+                </select>
+              </div>
+            </div>
+          </p>
+          <p id="demo" style="color: #FF0000"></p>
+          <p class="mb-0">
+            <button class="btn btn-primary btn-block password_btn" id="submit-btn" onclick="updateAssignedProject('${proj_id}', '${$('#assigned_to').val()}');" type="button">Submit</button>
+          </p>
+        </form>
+      `);
+      $('#assigned_to').select2({
+        type: 'bootstrap'
+      });
+      if (eachEmp.length) {
+        $("#assigned_to").val(eachEmp);
+        $("#assigned_to").trigger('change');
+      }
+    }
+
+    function updateAssignedProject(proj_id, ass_emps) {
+      console.log(proj_id, $('#assigned_to').val());
+      $.fancybox.close();
+      var SweetAlert2Demo = function () {
+        //== Demos
+        var initDemos = function () {
+          swal("Please wait...", {
+            buttons: false,
+            timer: 12000,
+            backdrop:true,
+            closeOnClickOutside: false,
+            closeOnEsc: false
+          })
+        };
+
+        return {
+            //== Init
+            init: function () {
+              initDemos();
+            },
+          };
+        }();
+      jQuery(document).ready(function () {
+        SweetAlert2Demo.init();
+      });
+      $.ajax({
+        type: 'POST',
+        url: `/admin/project/assign/to/update`,
+        data: {
+          projectId: proj_id,
+          assignTo:  $('#assigned_to').val()
+        },
+        success: function(result) {
+          console.log(result);
+          if (result.code == 200) {
+            swal.close();
+            $.notify({
+              message: `Assigned <strong>${result.data.name}</strong> to employees!`
+            },{
+              type: 'success',
+              showProgressbar: false
+            },
+            {
+              offset: 20,
+              spacing: 10,
+              z_index: 1031,
+              delay: 5000,
+              timer: 1000
+            });
+            setTimeout(function() {
+              window.location.reload();
+            }, 1000)
+          } else {
+            swal.close();
+            $.notify({
+              message: 'Something went wrong! Try again later.'
+            },{
+              type: 'danger',
+              showProgressbar: false
+            },
+            {
+              offset: 20,
+              spacing: 10,
+              z_index: 1031,
+              delay: 5000,
+              timer: 1000
+            });
+          }
+        }
+      })
+    }
+
+    function openAddSubTask(project_id) {
+      window.location.href = `/admin/project/add/sub/task?project_id=${project_id}`;
+    }

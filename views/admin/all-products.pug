@@ -1,0 +1,79 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold View All Products
+              h5.text-white.op-7.mb-2 Welcome to Admin Panel
+            .ml-md-auto.py-2.py-md-0
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/product/add') Add Product
+              a.btn.btn-white.btn-border.btn-round.mr-2(href='/admin/dashboard') Dashboard
+      .page-inner
+        .row
+          .col-md-12
+            .card.card-with-nav
+              .card-body
+                //- +searchUsers()
+                //- pre= h.dump(products)
+                .row
+                  .col-md-4
+                    .form-group
+                      label(for='exampleFormControlSelect') Select Product Type
+                      select#product_type.form-control.select2(name='product_type')
+                        option(value='') Select Product Type
+                        option(value='product') Product
+                        option(value='spare') Spare
+                  .col-md-4
+                    .form-group
+                      label(for='exampleFormControlSelect') Select Status type
+                      select#status.form-control.select2(name='status')
+                        option(value='') Select Status Type
+                        option(value='Active') Active
+                        option(value='Inactive') Inactive
+                  .col-md-2
+                    .text-center
+                      button.btn.btn-primary.download_all_products(type="button" style='margin-top:26px;')
+                        | Download All Products
+                  .col-md-2
+                    button.btn.btn-primary#clear_filter(type="button" style='margin-top:26px;')
+                      | Clear Filter
+                hr
+                .table-responsive
+                  .col-sm-12
+                    table#all_products.display.table.table-striped.table-hover.dataTable(role='grid', aria-describedby='basic-datatables_info')
+                      thead
+                        tr(role='row')
+                          th Name
+                          th Alternate name
+                          th Category
+                          th Type
+                          th Price
+                          th Status
+                          th Action
+                      tbody
+                        each product in products
+                          a(href="#")
+                            tr.odd(role='row')
+                              if product.is_spare === "product"
+                                td.sorting_1 #{product.name}
+                                  a.btn.btn-link.btn-primary.view_spares(href='javascript:void(0)' data-id=`${product._id}` data-productname=`${product.name}`)
+                                    i.fa.fa-arrow-circle-right
+                              else
+                                td.sorting_1 #{product.name}
+                              td #{product.alt_name}
+                              //-td #{(product.categories && product.categories.length) ? product.categories.map(cat => cat.name) : "Not provided"}
+                              td Product
+                              td #{product.is_spare}
+                              td #{product.price} /-
+                              td #{product.status == 'active' ? 'Active' : 'Inactive'}
+                              td
+                                a.btn.btn-link.btn-primary(href=`/admin/product/edit/${product._id}`)
+                                  i.fa.fa-edit
+                .row
+  block script.
+    script(src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js")
+    script(src="/admin/custom/all_product.js")

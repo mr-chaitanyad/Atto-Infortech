@@ -1,0 +1,62 @@
+extends layout-admin
+
+block content
+  .main-panel
+    .container
+      .panel-header.bg-primary-gradient
+        .page-inner.py-5
+          .d-flex.align-items-left.align-items-md-center.flex-column.flex-md-row
+            div
+              h2.text-white.pb-2.fw-bold Add Timesheet
+              h5.text-white.op-7.mb-2 Welcome to Atto Infotech
+      .page-inner
+        .row
+          .col-md-12
+            //- pre= h.dump(projects)
+            .card.card-with-nav
+              form(action="/admin/timesheet/create", method="POST")
+                .card-body
+                  .table-responsive
+                    .col-sm-12
+                      table#addmoreTable.display.table.table-bordered(role='grid', aria-describedby='basic-datatables_info')
+                          thead
+                            tr
+                              th.w-25 Select project
+                              th Date
+                              th Hour
+                              th.w-25 Sub Task
+                              th Notes
+                              th
+                                button.btn.btn-primary.btn-sm.addmore(type="button") Add more
+                          tbody
+                            tr(tr_count = 0)
+                              td
+                                select.form-control(name='project_id[0]', id="proj0" style="height: 20px !important" class="sel_proj" required)
+                                  option(value="", id="zero_proj" disabled selected) --- Select Project ---
+                                  each project in projects
+                                    if (project.project_id)
+                                      option(value=project.project_id._id) #{project.project_id.name}
+                              td
+                                input.form-control.custom-input.date(type='text' id="date0" style="height: 30px !important;" name='date[0]' required="" autocomplete="off" value="")
+                              td
+                                input.form-control.custom-input.hour.decimal(type='text' style="height: 30px !important;" name='hour[0]' required="")
+                              td
+                                select.form-control(name='sub_task[0]', id="sub_task0" style="height: 20px !important" class="sel_task")
+                                  option(value="", id="zero_sub_task" selected) Not Provided
+                              td
+                                textarea.custom-input.notes(name="notes[0]" placeholder="Any notes.." style="height: 32px; width: 100%; border: 1px solid rgb(235, 237, 242); margin-top: 3px; border-radius: 5px;")
+                                //- input.form-control.custom-input.notes(type='text' style="height: 30px !important;" name='notes[0]' placeholder="Any notes..")
+                              //- td
+                              //-   button.btn.btn-color(type="submit" id="submit-btn") Add Product
+                  .card-action
+                    .row
+                      .col-md-12
+                        button.btn.btn-primary(type="submit") Add Timesheet
+                .row
+  block script
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript' src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+    script(src='/admin/custom/add-timesheet.js')
+
+  script.
+    var allProjectsObj = !{JSON.stringify(projects)};
